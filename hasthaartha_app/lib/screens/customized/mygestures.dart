@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hasthaartha_app/screens/customized/addnewgesture.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -55,13 +57,19 @@ class MyGesturesPage extends StatelessWidget {
 
               // Icon / image in the middle
               // TODO: replace with your real asset
-              SizedBox(
-                height: 120,
-                child: Image.asset(
-                  'assets/images/hand_sign.png',
-                  fit: BoxFit.contain,
-                ),
-              ),
+              GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddGesturePage()),
+    );
+  },
+  child: Image.asset(
+    'assets/images/hand_sign.png',
+    height: 120,
+    fit: BoxFit.contain,
+  ),
+),
 
               const SizedBox(height: 40),
 
