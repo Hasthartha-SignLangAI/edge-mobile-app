@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/customized/mygestures.dart';
 
 void main() {
   runApp(const MyApp());
@@ -109,8 +110,20 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
+            const SizedBox(height: 32), // space
+
+    ElevatedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MyGesturesPage()),
+        );
+      },
+      child: const Text("Go to My Gestures Page"),
+    ),
           ],
         ),
+
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
