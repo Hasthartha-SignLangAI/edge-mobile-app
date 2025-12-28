@@ -1,7 +1,24 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:hasthaartha_app/screens/splash/splash1.dart';
 
-class LogoScreen extends StatelessWidget {
+class LogoScreen extends StatefulWidget {
   const LogoScreen({super.key});
+
+  @override
+  State<LogoScreen> createState() => _LogoScreenState();
+}
+
+class _LogoScreenState extends State<LogoScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Timer(const Duration(seconds: 3), () {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const Splash1()),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,10 +33,9 @@ class LogoScreen extends StatelessWidget {
               width: 150, // Adjust size as needed
               height: 150,
               errorBuilder: (context, error, stackTrace) {
-                // Placeholder if asset is missing
+                
                 return const Icon(
-                  Icons
-                      .fingerprint, // Relevant icon for "Hasthaartha" (sounds like hand/meaning)
+                  Icons.fingerprint, //icon for "Hasthaartha"
                   size: 100,
                   color: Colors.black,
                 );
@@ -31,7 +47,7 @@ class LogoScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF007BFF), // Blue color
+                color: Color(0xFF007BFF), 
               ),
             ),
           ],
