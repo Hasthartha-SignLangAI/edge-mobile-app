@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hasthaartha_app/screens/auth/register.dart';
 
 class Splash3 extends StatelessWidget {
   const Splash3({super.key});
@@ -7,73 +8,78 @@ class Splash3 extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Wave Background
-          ClipPath(
-            clipper: Splash3WaveClipper(),
-            child: Container(
-              height: 300, // Adjusted height for proportion
-              color: const Color(0xFF007BFF),
+      body: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const RegisterScreen()),
+          );
+        },
+        child: Column(
+          children: [
+            // Wave Background
+            ClipPath(
+              clipper: Splash3WaveClipper(),
+              child: Container(height: 300, color: const Color(0xFF007BFF)),
             ),
-          ),
 
-          // Title
-          const Padding(
-            padding: EdgeInsets.only(top: 20.0, right: 20.0),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                'Who can use ?',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF007BFF),
+            // Title
+            const Padding(
+              padding: EdgeInsets.only(top: 20.0, right: 20.0),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'Who can use ?',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF007BFF),
+                  ),
                 ),
               ),
             ),
-          ),
 
-          const Spacer(),
+            const Spacer(),
 
-          // Central Image
-          Image.asset(
-            'assets/images/splash3.png',
-            height: 250,
-            fit: BoxFit.contain,
-          ),
+            // Central Image
+            Image.asset(
+              'assets/images/splash3.png',
+              height: 250,
+              fit: BoxFit.contain,
+            ),
 
-          const SizedBox(height: 30),
+            const SizedBox(height: 30),
 
-          // Description
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40.0),
-            child: Text(
-              'Designed specifically for friends with\nspeaking difficulties',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
-                height: 1.5,
+            // Description
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40.0),
+              child: Text(
+                'Designed specifically for friends with\nspeaking difficulties',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                  height: 1.5,
+                ),
               ),
             ),
-          ),
 
-          const Spacer(flex: 2),
+            const Spacer(flex: 2),
 
-          // Dots
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildDot(false),
-              const SizedBox(width: 8),
-              _buildDot(false),
-              const SizedBox(width: 8),
-              _buildDot(true),
-            ],
-          ),
-          const SizedBox(height: 48),
-        ],
+            // Dots
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildDot(false),
+                const SizedBox(width: 8),
+                _buildDot(false),
+                const SizedBox(width: 8),
+                _buildDot(true),
+              ],
+            ),
+            const SizedBox(height: 48),
+          ],
+        ),
       ),
     );
   }
