@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hasthaartha_app/screens/customized/addsign.dart';
 
 class AddGesturePage extends StatelessWidget {
   const AddGesturePage({super.key});
@@ -40,7 +41,13 @@ class AddGesturePage extends StatelessWidget {
               Center(
                 child: GestureDetector(
                   onTap: () {
-                    // TODO: handle "Add" tap (start recording etc.)
+                    // Navigate to AddSignPage (second screen)
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddSignPage(),
+                      ),
+                    );
                   },
                   child: Container(
                     height: 140,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
 
 class SinhalaMeaningPage extends StatefulWidget {
   const SinhalaMeaningPage({super.key});
@@ -28,10 +29,19 @@ class _SinhalaMeaningPageState extends State<SinhalaMeaningPage> {
       return;
     }
 
-    // TODO: handle saving the meaning (local DB / API / Firebase etc.)
+    // Show success message before navigating
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Saved meaning: $text'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    // Navigate to My Gesture List Page (replace current page)
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MyGestureListPage(),
       ),
     );
   }
@@ -70,7 +80,7 @@ class _SinhalaMeaningPageState extends State<SinhalaMeaningPage> {
 
                 const SizedBox(height: 30),
 
-                // Big circle "Add" button (for consistency with other pages)
+                // Big circle icon for UI consistency
                 Container(
                   height: 140,
                   width: 140,
@@ -150,7 +160,7 @@ class _SinhalaMeaningPageState extends State<SinhalaMeaningPage> {
 
                 const SizedBox(height: 24),
 
-                // Save button
+                // Save button to go to MyGestureListPage
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -175,7 +185,7 @@ class _SinhalaMeaningPageState extends State<SinhalaMeaningPage> {
 
                 const Spacer(),
 
-                // Page indicator (this is the 3rd step, so last dot active)
+                // Page dots indicator
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [

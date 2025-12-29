@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:hasthaartha_app/screens/customized/sinhalameaning.dart';
 
-class AddGesturePage extends StatefulWidget {
-  const AddGesturePage({super.key});
+class AddSignPage extends StatefulWidget {
+  const AddSignPage({super.key});
 
   @override
-  State<AddGesturePage> createState() => _AddGesturePageState();
+  State<AddSignPage> createState() => _AddSignPageState();
 }
 
-class _AddGesturePageState extends State<AddGesturePage> {
+class _AddSignPageState extends State<AddSignPage> {
   // Gesture attempt tracking
   List<bool> done = [false, false, false, false, false];
   int currentStep = 0;
@@ -15,8 +16,42 @@ class _AddGesturePageState extends State<AddGesturePage> {
   void markStepDone(int index) {
     setState(() {
       done[index] = true;
-      if (currentStep < 4) currentStep++;
     });
+  }
+
+  String _ordinal(int index) {
+    switch (index) {
+      case 0:
+        return "1st";
+      case 1:
+        return "2nd";
+      case 2:
+        return "3rd";
+      case 3:
+        return "4th";
+      case 4:
+      default:
+        return "5th";
+    }
+  }
+
+  void _onAddPressed() {
+    // If we have not yet completed all 5 steps
+    if (currentStep < 4) {
+      markStepDone(currentStep);
+      currentStep++;
+    } else {
+      // This is the 5th tap:
+      markStepDone(currentStep);
+
+      // Navigate to SinhalaMeaningPage
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SinhalaMeaningPage(),
+        ),
+      );
+    }
   }
 
   @override
@@ -54,11 +89,7 @@ class _AddGesturePageState extends State<AddGesturePage> {
 
                 // Big Add Gesture Button
                 GestureDetector(
-                  onTap: () {
-                    if (currentStep < 5) {
-                      markStepDone(currentStep);
-                    }
-                  },
+                  onTap: _onAddPressed,
                   child: Container(
                     height: 140,
                     width: 140,
@@ -121,21 +152,23 @@ class _AddGesturePageState extends State<AddGesturePage> {
                           children: [
                             Expanded(
                               child: Text(
-                                "${index + 1}st".replaceFirst('1st', '1st') // keep readable
-                                    .replaceFirst('2st', '2nd')
-                                    .replaceFirst('3st', '3rd')
-                                    .replaceFirst('4st', '4th')
-                                    .replaceFirst('5st', '5th'),
+                                _ordinal(index),
                                 style: const TextStyle(
                                   fontSize: 15,
                                 ),
                               ),
                             ),
                             done[index]
-                                ? const Icon(Icons.check_circle,
-                                    color: Colors.green, size: 22)
-                                : const Icon(Icons.circle_outlined,
-                                    color: Colors.black54, size: 22),
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                    size: 22,
+                                  )
+                                : const Icon(
+                                    Icons.circle_outlined,
+                                    color: Colors.black54,
+                                    size: 22,
+                                  ),
                           ],
                         ),
                       );
@@ -145,7 +178,7 @@ class _AddGesturePageState extends State<AddGesturePage> {
 
                 const Spacer(),
 
-                // Page indicator dots
+                // Page indicator dots (this is step 2)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
