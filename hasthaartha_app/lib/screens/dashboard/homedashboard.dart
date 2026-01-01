@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:hasthaartha_app/screens/auth/login.dart';
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
+import 'package:hasthaartha_app/services/auth_service.dart';
 
 class HomeDashboard extends StatefulWidget {
   final String userName;
@@ -59,7 +61,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -76,6 +78,21 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           ],
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 10),
+                    IconButton(
+                      onPressed: () async {
+                        await AuthService().signOut();
+                        if (context.mounted) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginScreen(),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.logout, color: Colors.black54),
                     ),
                   ],
                 ),

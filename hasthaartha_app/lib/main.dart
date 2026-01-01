@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'package:hasthaartha_app/screens/splash/logoscreen.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+import 'package:hasthaartha_app/firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
