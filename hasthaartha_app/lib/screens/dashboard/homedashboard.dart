@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:hasthaartha_app/screens/auth/login.dart';
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
+import 'package:hasthaartha_app/screens/history/history.dart';
+import 'package:hasthaartha_app/localdb/repo/local_repo.dart';
 
 class HomeDashboard extends StatefulWidget {
   final String userName;
@@ -104,11 +106,13 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD6E4FF), // Light periwinkle/blue
+                    color: const Color(
+                      0xFF1E88E5,
+                    ).withValues(alpha: 0.1), // Light periwinkle/blue
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -166,8 +170,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   title: 'Start Translating',
                   width: double.infinity,
                   height: 60,
-                  onTap: () {
-                    // Navigate to translating
+                  onTap: () async {
+                    await LocalRepo().addHistory(
+                      gestureLabel: "HELLO",
+                      sinhalaText: "ආයුබෝවන්",
+                      confidence: 0.92,
+                    );
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Dummy history saved")),
+                    );
                   },
                 ),
 
@@ -181,7 +193,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
                         title: 'History',
                         height: 150,
                         onTap: () {
-                          // Navigate to history
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HistoryScreen(),
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -233,7 +250,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
