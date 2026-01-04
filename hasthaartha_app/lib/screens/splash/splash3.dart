@@ -1,90 +1,121 @@
 import 'package:flutter/material.dart';
-import 'package:hasthaartha_app/screens/auth/register.dart';
+import 'package:hasthaartha_app/services/auth_gate.dart';
 
 class Splash3 extends StatelessWidget {
   const Splash3({super.key});
+
+  void _goNext(BuildContext context) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const AuthGate()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const RegisterScreen()),
-          );
-        },
-        child: Column(
-          children: [
-            // Wave Background
-            ClipPath(
-              clipper: Splash3WaveClipper(),
-              child: Container(height: 300, color: const Color(0xFF007BFF)),
-            ),
 
-            // Title
-            const Padding(
-              padding: EdgeInsets.only(top: 20.0, right: 20.0),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'Who can use ?',
+      // Instead of GestureDetector for the whole screen,
+      // we make a clear button so users don't accidentally skip.
+      body: Column(
+        children: [
+          // Wave Background
+          ClipPath(
+            clipper: Splash3WaveClipper(),
+            child: Container(height: 300, color: const Color(0xFF007BFF)),
+          ),
+
+          // Title
+          const Padding(
+            padding: EdgeInsets.only(top: 20.0, right: 20.0),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'Who can use ?',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF007BFF),
+                ),
+              ),
+            ),
+          ),
+
+          const Spacer(),
+
+          // Central Image
+          Image.asset(
+            'assets/images/splash3.png',
+            height: 250,
+            fit: BoxFit.contain,
+          ),
+
+          const SizedBox(height: 30),
+
+          // Description
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40.0),
+            child: Text(
+              'Designed specifically for friends with\nspeaking difficulties',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+                height: 1.5,
+              ),
+            ),
+          ),
+
+          const Spacer(),
+
+          // Dots
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildDot(false),
+              const SizedBox(width: 8),
+              _buildDot(false),
+              const SizedBox(width: 8),
+              _buildDot(true),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // Clear CTA button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF007BFF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: () => _goNext(context),
+                child: const Text(
+                  "Get Started",
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF007BFF),
+                    color: Colors.white,
                   ),
                 ),
               ),
             ),
+          ),
 
-            const Spacer(),
-
-            // Central Image
-            Image.asset(
-              'assets/images/splash3.png',
-              height: 250,
-              fit: BoxFit.contain,
-            ),
-
-            const SizedBox(height: 30),
-
-            // Description
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40.0),
-              child: Text(
-                'Designed specifically for friends with\nspeaking difficulties',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                  height: 1.5,
-                ),
-              ),
-            ),
-
-            const Spacer(flex: 2),
-
-            // Dots
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildDot(false),
-                const SizedBox(width: 8),
-                _buildDot(false),
-                const SizedBox(width: 8),
-                _buildDot(true),
-              ],
-            ),
-            const SizedBox(height: 48),
-          ],
-        ),
+          const SizedBox(height: 28),
+        ],
       ),
     );
   }
 
-  Widget _buildDot(bool isActive) {
+  static Widget _buildDot(bool isActive) {
     return Container(
       width: 12,
       height: 12,
