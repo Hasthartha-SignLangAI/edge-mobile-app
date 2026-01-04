@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:hasthaartha_app/screens/auth/login.dart';
+import 'package:hasthaartha_app/screens/customized/addnewgesture.dart';
 import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
@@ -41,6 +42,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
+
                 // Header Area
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -83,10 +85,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
                 const SizedBox(height: 30),
 
-                // Primary Action
+                // Primary Action - Start Translating
                 _buildPrimaryActionButton(
                   title: 'Start Translating',
-                  icon: Icons.mic_none_rounded, // Or gesture icon
+                  icon: Icons.mic_none_rounded,
                   onTap: () async {
                     final messenger = ScaffoldMessenger.of(context);
                     await LocalRepo().addHistory(
@@ -103,6 +105,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         backgroundColor: const Color(0xFF1E88E5),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // ✅ NEW BUTTON - My Gestures (go to addnewgesture.dart)
+                _buildPrimaryActionButton(
+                  title: 'My Gestures',
+                  icon: Icons.back_hand_rounded,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AddGesturePage(),
                       ),
                     );
                   },
@@ -134,12 +152,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       child: _buildMenuCard(
                         title: 'Gestures',
                         icon: Icons.back_hand_rounded,
-                        colorStart: const Color(
-                          0xFF00695C,
-                        ), // Teal-ish for variety but keeping theme harmony
+                        colorStart: const Color(0xFF00695C),
                         colorEnd: const Color(0xFF00897B),
                         onTap: () {
-                          // Navigate to gestures
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -162,7 +177,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   colorStart: const Color(0xFF455A64),
                   colorEnd: const Color(0xFF607D8B),
                   onTap: () {
-                    // Navigate to settings
+                    // TODO: settings screen navigation
                   },
                 ),
 
@@ -201,7 +216,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         icon: const Icon(
           Icons.logout_rounded,
           color: Color(0xFFFF5252),
-        ), // Soft red for logout
+        ),
         tooltip: 'Logout',
       ),
     );
@@ -294,7 +309,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1976D2), Color(0xFF42A5F5)], // Rich Blue Gradient
+          colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -341,7 +356,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.graphic_eq_rounded, // Sound/Gesture wave representative
+              Icons.graphic_eq_rounded,
               size: 32,
               color: Colors.white,
             ),
