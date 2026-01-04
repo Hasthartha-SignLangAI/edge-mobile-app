@@ -6,6 +6,9 @@ part 'custom_gesture.g.dart';
 class CustomGesture {
   Id id = Isar.autoIncrement;
 
+  @Index()
+  late String userId;
+
   late String name;          // user-defined gesture name
   late DateTime createdAt;
 
