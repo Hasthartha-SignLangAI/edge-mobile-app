@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:hasthaartha_app/screens/auth/login.dart';
 import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
@@ -6,6 +7,9 @@ import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
 import 'package:hasthaartha_app/screens/history/history.dart';
 import 'package:hasthaartha_app/localdb/repo/local_repo.dart';
+
+// ✅ add this import
+import 'package:hasthaartha_app/tflite_base.dart';
 
 class HomeDashboard extends StatefulWidget {
   final String userName;
@@ -16,6 +20,55 @@ class HomeDashboard extends StatefulWidget {
 }
 
 class _HomeDashboardState extends State<HomeDashboard> {
+  final TfliteBaseModel _tflite = TfliteBaseModel();
+
+  @override
+  void dispose() {
+    // Close interpreter when leaving page
+    _tflite.close();
+    super.dispose();
+  }
+
+  Future<void> _runTfliteTest() async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      // ✅ Asset sanity check (this will fail if pubspec/assets path is wrong)
+      final bytes = await rootBundle
+          .load('assets/models/cnn_lstm_with_idle_fp32.tflite');
+      debugPrint("✅ model bytes = ${bytes.lengthInBytes}");
+
+      // Load interpreter (only once)
+      if (!_tflite.isLoaded) {
+        await _tflite.load();
+      }
+
+      // Run dummy prediction
+      final out = _tflite.predictDummy();
+
+      // show first few outputs
+      final preview = out.take(5).map((e) => e.toStringAsFixed(4)).join(", ");
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text("✅ TFLite OK. out[0..4]=[$preview]"),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          backgroundColor: const Color(0xFF1E88E5),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text("❌ TFLite load/run failed: $e"),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          backgroundColor: const Color(0xFFD32F2F),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,9 +79,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFFF0F7FF), // Very light blue
-              Color(0xFFDEEDFF), // Soft blue
-              Color(0xFFC7E2FF), // Medium soft blue
+              Color(0xFFF0F7FF),
+              Color(0xFFDEEDFF),
+              Color(0xFFC7E2FF),
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -61,7 +114,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0D47A1), // Deep Blue
+                            color: Color(0xFF0D47A1),
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -86,7 +139,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 // Primary Action
                 _buildPrimaryActionButton(
                   title: 'Start Translating',
-                  icon: Icons.mic_none_rounded, // Or gesture icon
+                  icon: Icons.mic_none_rounded,
                   onTap: () async {
                     final messenger = ScaffoldMessenger.of(context);
                     await LocalRepo().addHistory(
@@ -106,6 +159,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       ),
                     );
                   },
+                ),
+
+                const SizedBox(height: 14),
+
+                // ✅ NEW BUTTON UNDER START TRANSLATING
+                _buildPrimaryActionButton(
+                  title: 'Run TFLite (Test)',
+                  icon: Icons.smart_toy_outlined,
+                  onTap: _runTfliteTest,
                 ),
 
                 const SizedBox(height: 25),
@@ -134,12 +196,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       child: _buildMenuCard(
                         title: 'Gestures',
                         icon: Icons.back_hand_rounded,
-                        colorStart: const Color(
-                          0xFF00695C,
-                        ), // Teal-ish for variety but keeping theme harmony
+                        colorStart: const Color(0xFF00695C),
                         colorEnd: const Color(0xFF00897B),
                         onTap: () {
-                          // Navigate to gestures
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -201,7 +260,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         icon: const Icon(
           Icons.logout_rounded,
           color: Color(0xFFFF5252),
-        ), // Soft red for logout
+        ),
         tooltip: 'Logout',
       ),
     );
@@ -294,7 +353,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1976D2), Color(0xFF42A5F5)], // Rich Blue Gradient
+          colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -341,7 +400,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.graphic_eq_rounded, // Sound/Gesture wave representative
+              Icons.graphic_eq_rounded,
               size: 32,
               color: Colors.white,
             ),
