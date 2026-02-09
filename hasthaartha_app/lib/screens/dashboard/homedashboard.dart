@@ -4,9 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hasthaartha_app/screens/auth/login.dart';
 import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
+import 'package:hasthaartha_app/screens/translation/realtime_translation_screen.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
 import 'package:hasthaartha_app/screens/history/history.dart';
-import 'package:hasthaartha_app/localdb/repo/local_repo.dart';
 
 class HomeDashboard extends StatefulWidget {
   final String userName;
@@ -113,22 +113,11 @@ class _HomeDashboardState extends State<HomeDashboard>
                 _buildPrimaryActionButton(
                   title: 'Start Translating',
                   icon: Icons.mic_none_rounded, // Or gesture icon
-                  onTap: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    await LocalRepo().addHistory(
-                      gestureLabel: "HELLO",
-                      sinhalaText: "ආයුබෝවන්",
-                      confidence: 0.92,
-                    );
-                    if (!mounted) return;
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: const Text("Dummy history saved"),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        backgroundColor: const Color(0xFF1E88E5),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RealtimeTranslationScreen(),
                       ),
                     );
                   },
