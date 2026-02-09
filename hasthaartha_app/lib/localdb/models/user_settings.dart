@@ -4,7 +4,11 @@ part 'user_settings.g.dart';
 
 @collection
 class UserSettings {
-  Id id = 1; // single row
+  Id id = Isar.autoIncrement; // single row
+
+//firebase user id
+  @Index(unique: true)
+  late String userId;
 
   double ttsSpeed = 1.0;
   double ttsPitch = 1.0;
@@ -17,5 +21,5 @@ class UserSettings {
   String? lastBleDeviceName;
 
   /// To later add Sinhala/English UI toggle
-  String uiLanguage = "si"; // si/en
+  String uiLanguage = "si"; // sinhala/english
 }

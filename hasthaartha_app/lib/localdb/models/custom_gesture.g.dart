@@ -41,6 +41,11 @@ const CustomGestureSchema = CollectionSchema(
       id: 4,
       name: r'samplesDir',
       type: IsarType.string,
+    ),
+    r'userId': PropertySchema(
+      id: 5,
+      name: r'userId',
+      type: IsarType.string,
     )
   },
   estimateSize: _customGestureEstimateSize,
@@ -48,7 +53,21 @@ const CustomGestureSchema = CollectionSchema(
   deserialize: _customGestureDeserialize,
   deserializeProp: _customGestureDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'userId': IndexSchema(
+      id: -2005826577402374815,
+      name: r'userId',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'userId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _customGestureGetId,
@@ -65,6 +84,7 @@ int _customGestureEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.samplesDir.length * 3;
+  bytesCount += 3 + object.userId.length * 3;
   return bytesCount;
 }
 
@@ -79,6 +99,7 @@ void _customGestureSerialize(
   writer.writeString(offsets[2], object.name);
   writer.writeLong(offsets[3], object.sampleCount);
   writer.writeString(offsets[4], object.samplesDir);
+  writer.writeString(offsets[5], object.userId);
 }
 
 CustomGesture _customGestureDeserialize(
@@ -94,6 +115,7 @@ CustomGesture _customGestureDeserialize(
   object.name = reader.readString(offsets[2]);
   object.sampleCount = reader.readLong(offsets[3]);
   object.samplesDir = reader.readString(offsets[4]);
+  object.userId = reader.readString(offsets[5]);
   return object;
 }
 
@@ -113,6 +135,8 @@ P _customGestureDeserializeProp<P>(
     case 3:
       return (reader.readLong(offset)) as P;
     case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -209,6 +233,51 @@ extension CustomGestureQueryWhere
         upper: upperId,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterWhereClause> userIdEqualTo(
+      String userId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userId',
+        value: [userId],
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterWhereClause>
+      userIdNotEqualTo(String userId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ));
+      }
     });
   }
 }
@@ -661,6 +730,142 @@ extension CustomGestureQueryFilter
       ));
     });
   }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterFilterCondition>
+      userIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension CustomGestureQueryObject
@@ -732,6 +937,18 @@ extension CustomGestureQuerySortBy
       sortBySamplesDirDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'samplesDir', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterSortBy> sortByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterSortBy> sortByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
     });
   }
 }
@@ -813,6 +1030,18 @@ extension CustomGestureQuerySortThenBy
       return query.addSortBy(r'samplesDir', Sort.desc);
     });
   }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterSortBy> thenByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QAfterSortBy> thenByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
+    });
+  }
 }
 
 extension CustomGestureQueryWhereDistinct
@@ -847,6 +1076,13 @@ extension CustomGestureQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'samplesDir', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CustomGesture, CustomGesture, QDistinct> distinctByUserId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userId', caseSensitive: caseSensitive);
     });
   }
 }
@@ -886,6 +1122,12 @@ extension CustomGestureQueryProperty
   QueryBuilder<CustomGesture, String, QQueryOperations> samplesDirProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'samplesDir');
+    });
+  }
+
+  QueryBuilder<CustomGesture, String, QQueryOperations> userIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userId');
     });
   }
 }

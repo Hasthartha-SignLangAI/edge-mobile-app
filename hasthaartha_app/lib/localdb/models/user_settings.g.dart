@@ -51,6 +51,11 @@ const UserSettingsSchema = CollectionSchema(
       id: 6,
       name: r'uiLanguage',
       type: IsarType.string,
+    ),
+    r'userId': PropertySchema(
+      id: 7,
+      name: r'userId',
+      type: IsarType.string,
     )
   },
   estimateSize: _userSettingsEstimateSize,
@@ -58,7 +63,21 @@ const UserSettingsSchema = CollectionSchema(
   deserialize: _userSettingsDeserialize,
   deserializeProp: _userSettingsDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'userId': IndexSchema(
+      id: -2005826577402374815,
+      name: r'userId',
+      unique: true,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'userId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _userSettingsGetId,
@@ -86,6 +105,7 @@ int _userSettingsEstimateSize(
     }
   }
   bytesCount += 3 + object.uiLanguage.length * 3;
+  bytesCount += 3 + object.userId.length * 3;
   return bytesCount;
 }
 
@@ -102,6 +122,7 @@ void _userSettingsSerialize(
   writer.writeDouble(offsets[4], object.ttsSpeed);
   writer.writeDouble(offsets[5], object.ttsVolume);
   writer.writeString(offsets[6], object.uiLanguage);
+  writer.writeString(offsets[7], object.userId);
 }
 
 UserSettings _userSettingsDeserialize(
@@ -119,6 +140,7 @@ UserSettings _userSettingsDeserialize(
   object.ttsSpeed = reader.readDouble(offsets[4]);
   object.ttsVolume = reader.readDouble(offsets[5]);
   object.uiLanguage = reader.readString(offsets[6]);
+  object.userId = reader.readString(offsets[7]);
   return object;
 }
 
@@ -143,6 +165,8 @@ P _userSettingsDeserializeProp<P>(
       return (reader.readDouble(offset)) as P;
     case 6:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -159,6 +183,61 @@ List<IsarLinkBase<dynamic>> _userSettingsGetLinks(UserSettings object) {
 void _userSettingsAttach(
     IsarCollection<dynamic> col, Id id, UserSettings object) {
   object.id = id;
+}
+
+extension UserSettingsByIndex on IsarCollection<UserSettings> {
+  Future<UserSettings?> getByUserId(String userId) {
+    return getByIndex(r'userId', [userId]);
+  }
+
+  UserSettings? getByUserIdSync(String userId) {
+    return getByIndexSync(r'userId', [userId]);
+  }
+
+  Future<bool> deleteByUserId(String userId) {
+    return deleteByIndex(r'userId', [userId]);
+  }
+
+  bool deleteByUserIdSync(String userId) {
+    return deleteByIndexSync(r'userId', [userId]);
+  }
+
+  Future<List<UserSettings?>> getAllByUserId(List<String> userIdValues) {
+    final values = userIdValues.map((e) => [e]).toList();
+    return getAllByIndex(r'userId', values);
+  }
+
+  List<UserSettings?> getAllByUserIdSync(List<String> userIdValues) {
+    final values = userIdValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'userId', values);
+  }
+
+  Future<int> deleteAllByUserId(List<String> userIdValues) {
+    final values = userIdValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'userId', values);
+  }
+
+  int deleteAllByUserIdSync(List<String> userIdValues) {
+    final values = userIdValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'userId', values);
+  }
+
+  Future<Id> putByUserId(UserSettings object) {
+    return putByIndex(r'userId', object);
+  }
+
+  Id putByUserIdSync(UserSettings object, {bool saveLinks = true}) {
+    return putByIndexSync(r'userId', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByUserId(List<UserSettings> objects) {
+    return putAllByIndex(r'userId', objects);
+  }
+
+  List<Id> putAllByUserIdSync(List<UserSettings> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'userId', objects, saveLinks: saveLinks);
+  }
 }
 
 extension UserSettingsQueryWhereSort
@@ -236,6 +315,51 @@ extension UserSettingsQueryWhere
         upper: upperId,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterWhereClause> userIdEqualTo(
+      String userId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userId',
+        value: [userId],
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterWhereClause> userIdNotEqualTo(
+      String userId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ));
+      }
     });
   }
 }
@@ -946,6 +1070,141 @@ extension UserSettingsQueryFilter
       ));
     });
   }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition> userIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition>
+      userIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition>
+      userIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition> userIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition>
+      userIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition>
+      userIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition>
+      userIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition> userIdMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition>
+      userIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterFilterCondition>
+      userIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension UserSettingsQueryObject
@@ -1042,6 +1301,18 @@ extension UserSettingsQuerySortBy
       sortByUiLanguageDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uiLanguage', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterSortBy> sortByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterSortBy> sortByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
     });
   }
 }
@@ -1148,6 +1419,18 @@ extension UserSettingsQuerySortThenBy
       return query.addSortBy(r'uiLanguage', Sort.desc);
     });
   }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterSortBy> thenByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QAfterSortBy> thenByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
+    });
+  }
 }
 
 extension UserSettingsQueryWhereDistinct
@@ -1196,6 +1479,13 @@ extension UserSettingsQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'uiLanguage', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserSettings, UserSettings, QDistinct> distinctByUserId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userId', caseSensitive: caseSensitive);
     });
   }
 }
@@ -1249,6 +1539,12 @@ extension UserSettingsQueryProperty
   QueryBuilder<UserSettings, String, QQueryOperations> uiLanguageProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'uiLanguage');
+    });
+  }
+
+  QueryBuilder<UserSettings, String, QQueryOperations> userIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userId');
     });
   }
 }

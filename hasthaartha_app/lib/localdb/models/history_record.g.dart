@@ -46,6 +46,11 @@ const HistoryRecordSchema = CollectionSchema(
       id: 5,
       name: r'sinhalaText',
       type: IsarType.string,
+    ),
+    r'userId': PropertySchema(
+      id: 6,
+      name: r'userId',
+      type: IsarType.string,
     )
   },
   estimateSize: _historyRecordEstimateSize,
@@ -53,7 +58,21 @@ const HistoryRecordSchema = CollectionSchema(
   deserialize: _historyRecordDeserialize,
   deserializeProp: _historyRecordDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'userId': IndexSchema(
+      id: -2005826577402374815,
+      name: r'userId',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'userId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _historyRecordGetId,
@@ -82,6 +101,7 @@ int _historyRecordEstimateSize(
     }
   }
   bytesCount += 3 + object.sinhalaText.length * 3;
+  bytesCount += 3 + object.userId.length * 3;
   return bytesCount;
 }
 
@@ -97,6 +117,7 @@ void _historyRecordSerialize(
   writer.writeString(offsets[3], object.gestureLabel);
   writer.writeString(offsets[4], object.probsJson);
   writer.writeString(offsets[5], object.sinhalaText);
+  writer.writeString(offsets[6], object.userId);
 }
 
 HistoryRecord _historyRecordDeserialize(
@@ -113,6 +134,7 @@ HistoryRecord _historyRecordDeserialize(
   object.id = id;
   object.probsJson = reader.readStringOrNull(offsets[4]);
   object.sinhalaText = reader.readString(offsets[5]);
+  object.userId = reader.readString(offsets[6]);
   return object;
 }
 
@@ -134,6 +156,8 @@ P _historyRecordDeserializeProp<P>(
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
+      return (reader.readString(offset)) as P;
+    case 6:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -230,6 +254,51 @@ extension HistoryRecordQueryWhere
         upper: upperId,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterWhereClause> userIdEqualTo(
+      String userId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userId',
+        value: [userId],
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterWhereClause>
+      userIdNotEqualTo(String userId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ));
+      }
     });
   }
 }
@@ -991,6 +1060,142 @@ extension HistoryRecordQueryFilter
       ));
     });
   }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterFilterCondition>
+      userIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension HistoryRecordQueryObject
@@ -1077,6 +1282,18 @@ extension HistoryRecordQuerySortBy
       sortBySinhalaTextDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sinhalaText', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterSortBy> sortByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterSortBy> sortByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
     });
   }
 }
@@ -1173,6 +1390,18 @@ extension HistoryRecordQuerySortThenBy
       return query.addSortBy(r'sinhalaText', Sort.desc);
     });
   }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterSortBy> thenByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QAfterSortBy> thenByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
+    });
+  }
 }
 
 extension HistoryRecordQueryWhereDistinct
@@ -1214,6 +1443,13 @@ extension HistoryRecordQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sinhalaText', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<HistoryRecord, HistoryRecord, QDistinct> distinctByUserId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userId', caseSensitive: caseSensitive);
     });
   }
 }
@@ -1259,6 +1495,12 @@ extension HistoryRecordQueryProperty
   QueryBuilder<HistoryRecord, String, QQueryOperations> sinhalaTextProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sinhalaText');
+    });
+  }
+
+  QueryBuilder<HistoryRecord, String, QQueryOperations> userIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userId');
     });
   }
 }

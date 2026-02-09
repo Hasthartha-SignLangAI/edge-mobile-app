@@ -6,6 +6,9 @@ part 'history_record.g.dart';
 class HistoryRecord {
   Id id = Isar.autoIncrement;
 
+  @Index()
+  late String userId;
+
   late DateTime createdAt;
 
   late String gestureLabel;
@@ -17,5 +20,5 @@ class HistoryRecord {
   String? deviceId;
 
   String? probsJson;
-  
+
 }

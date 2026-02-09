@@ -3,21 +3,34 @@ import '../isar_db.dart';
 import '../models/history_record.dart';
 import '../models/user_settings.dart';
 import '../models/custom_gesture.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LocalRepo {
   final Isar _db = IsarDB.instance;
 
+  String _currentUid() {
+    return FirebaseAuth.instance.currentUser?.uid ?? "anonymous";
+  }
+
   // SETTINGS
   Future<UserSettings> getSettings() async {
-    final s = await _db.userSettings.get(1);
+    final uid = _currentUid();
+
+    // If your UserSettings model doesn't have `userId`, keep using ID=1
+    // But for multi-user, it's better to add `userId` to settings as well.
+    final s = await _db.userSettings.filter().userIdEqualTo(uid).findFirst();
     if (s != null) return s;
 
-    final fresh = UserSettings();
+    final fresh = UserSettings()
+      ..userId = uid; // requires userId field in UserSettings model
+
     await _db.writeTxn(() async => _db.userSettings.put(fresh));
     return fresh;
   }
 
   Future<void> updateSettings(UserSettings settings) async {
+    // ensure userId is always set (multi-user safety)
+    settings.userId = settings.userId.isNotEmpty ? settings.userId : _currentUid();
     await _db.writeTxn(() async => _db.userSettings.put(settings));
   }
 
@@ -29,7 +42,10 @@ class LocalRepo {
     String? deviceId,
     String? probsJson,
   }) async {
+    final uid = _currentUid();
+
     final rec = HistoryRecord()
+      ..userId = uid
       ..createdAt = DateTime.now()
       ..gestureLabel = gestureLabel
       ..sinhalaText = sinhalaText
@@ -41,15 +57,30 @@ class LocalRepo {
   }
 
   Future<List<HistoryRecord>> latestHistory({int limit = 50}) async {
+    final uid = _currentUid();
+
     return _db.historyRecords
         .where()
+        .userIdEqualTo(uid)
         .sortByCreatedAtDesc()
         .limit(limit)
         .findAll();
   }
 
   Future<void> clearHistory() async {
-    await _db.writeTxn(() async => _db.historyRecords.clear());
+    final uid = _currentUid();
+
+    await _db.writeTxn(() async {
+      final ids = await _db.historyRecords
+          .filter()
+          .userIdEqualTo(uid)
+          .idProperty()
+          .findAll();
+
+          if (ids.isNotEmpty) {
+            await _db.historyRecords.deleteAll(ids);
+          }
+    });
   }
 
   // CUSTOM GESTURES
@@ -57,7 +88,10 @@ class LocalRepo {
     required String name,
     required String samplesDir,
   }) async {
+    final uid = _currentUid();
+
     final g = CustomGesture()
+      ..userId = uid
       ..name = name
       ..createdAt = DateTime.now()
       ..samplesDir = samplesDir
@@ -69,10 +103,17 @@ class LocalRepo {
   }
 
   Future<List<CustomGesture>> listCustomGestures() async {
-    return _db.customGestures.where().sortByCreatedAtDesc().findAll();
+    final uid = _currentUid();
+
+    return _db.customGestures
+        .filter()
+        .userIdEqualTo(uid)
+        .sortByCreatedAtDesc()
+        .findAll();
   }
 
   Future<void> updateCustomGesture(CustomGesture g) async {
+    g.userId = g.userId.isNotEmpty ? g.userId : _currentUid();
     await _db.writeTxn(() async => _db.customGestures.put(g));
   }
 
