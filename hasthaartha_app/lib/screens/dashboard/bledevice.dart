@@ -61,7 +61,7 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF4A90E2).withOpacity(0.4),
+                          color: const Color(0xFF4A90E2).withValues(alpha: 0.4),
                           blurRadius: 20,
                           spreadRadius: 5,
                           offset: const Offset(0, 10),
@@ -102,7 +102,9 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFCDE5FF),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                    border: Border.all(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -140,8 +142,8 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFCDE5FF).withOpacity(
-                        0.5,
+                      color: const Color(0xFFCDE5FF).withValues(
+                        alpha: 0.5,
                       ), // Lighter background for the list container
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -152,12 +154,11 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen> {
                         itemCount: otherDevices.length,
                         separatorBuilder: (context, index) => Divider(
                           height: 1,
-                          color: Colors.white.withOpacity(0.4),
+                          color: Colors.black.withValues(alpha: 0.5),
                         ),
                         itemBuilder: (context, index) {
                           return Container(
-                            color: Colors
-                                .transparent,
+                            color: Colors.transparent,
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 20,

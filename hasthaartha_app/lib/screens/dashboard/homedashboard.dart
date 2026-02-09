@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:hasthaartha_app/screens/auth/login.dart';
+import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
+import 'package:hasthaartha_app/screens/translation/realtime_translation_screen.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
+import 'package:hasthaartha_app/screens/history/history.dart';
 
 class HomeDashboard extends StatefulWidget {
   final String userName;
@@ -12,203 +16,225 @@ class HomeDashboard extends StatefulWidget {
   State<HomeDashboard> createState() => _HomeDashboardState();
 }
 
-class _HomeDashboardState extends State<HomeDashboard> {
+class _HomeDashboardState extends State<HomeDashboard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _shimmerController;
+  late Animation<double> _shimmerAnimation;
+  bool _isConnected = true; // Track BLE connection status
+  String _pressedCard = ''; // Track which card is being pressed
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+
+    _shimmerAnimation = Tween<double>(begin: -2, end: 2).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              Color(0xFFE6F0FF), // Lighter blue at top
-              Color(0xFFB3D9FF), // Slightly darker blue at bottom
+              Color(0xFFF0F7FF), // Very light blue
+              Color(0xFFDEEDFF), // Soft blue
+              Color(0xFFC7E2FF), // Medium soft blue
             ],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
-          //SafeArea to avoid notch/status bar
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                const SizedBox(height: 10),
+                // Header Area
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Hello ${widget.userName}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const BLEDeviceScreen(),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome back,',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            color: Colors.blueGrey[600],
+                            fontWeight: FontWeight.w500,
                           ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(20),
+                        Text(
+                          widget.userName,
+                          style: GoogleFonts.inter(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0D47A1), // Deep Blue
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                        child: Row(
-                          children: const [
-                            Icon(Icons.wifi, color: Colors.green, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Connected',
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    IconButton(
-                      onPressed: () async {
-                        await AuthService().signOut();
-                        if (context.mounted) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.logout, color: Colors.black54),
-                    ),
+                    _buildLogoutButton(),
                   ],
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 25),
 
-                // Banner
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD6E4FF), // Light periwinkle/blue
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Placeholder for illustration
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.blue[100],
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.people_alt_rounded,
-                          size: 40,
-                          color: Color(0xFF007BFF),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Hasthaartha',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1A1A),
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'is here to make\nlife easier for you',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF007BFF),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // Status Bar (Connected)
+                _buildConnectionStatus(),
 
                 const SizedBox(height: 30),
 
-                // Start Translating Button
-                _buildMenuButton(
+                // Hero Banner
+                _buildHeroBanner(),
+
+                const SizedBox(height: 30),
+
+                // Primary Action
+                _buildPrimaryActionButton(
                   title: 'Start Translating',
-                  width: double.infinity,
-                  height: 60,
+                  icon: Icons.mic_none_rounded, // Or gesture icon
                   onTap: () {
-                    // Navigate to translating
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RealtimeTranslationScreen(),
+                      ),
+                    );
                   },
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 25),
 
-                // Grid Row
+                // Grid Menu - 2x2 Layout
                 Row(
                   children: [
                     Expanded(
-                      child: _buildMenuButton(
+                      child: _buildMenuCard(
                         title: 'History',
-                        height: 150,
+                        icon: Icons.history_rounded,
+                        iconColor: const Color(0xFF1976D2), // Blue
                         onTap: () {
-                          // Navigate to history
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HistoryScreen(),
+                            ),
+                          );
                         },
                       ),
                     ),
-                    const SizedBox(width: 20),
+                    const SizedBox(width: 16),
                     Expanded(
-                      child: _buildMenuButton(
-                        title: 'My Gestures',
-                        height: 150,
+                      child: _buildMenuCard(
+                        title: 'Gestures',
+                        icon: Icons.back_hand_rounded,
+                        iconColor: const Color(0xFF00897B), // Teal
                         onTap: () {
-                          // Navigate to gestures
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MyGestureListPage(),
+                            ),
+                          );
                         },
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Settings Button
-                _buildMenuButton(
+                // Second Row of Grid
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildMenuCard(
+                        title: 'Profile',
+                        icon: Icons.person_rounded,
+                        iconColor: const Color(0xFF8E24AA), // Purple
+                        onTap: () {
+                          // Navigate to profile
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text("Profile coming soon!"),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              backgroundColor: const Color(0xFF8E24AA),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildMenuCard(
+                        title: 'About',
+                        icon: Icons.info_rounded,
+                        iconColor: const Color(0xFFFF6F00), // Orange
+                        onTap: () {
+                          // Navigate to about
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text("About page coming soon!"),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              backgroundColor: const Color(0xFFFF6F00),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Settings Full Width
+                _buildMenuCard(
                   title: 'Settings',
-                  width: double.infinity,
-                  height: 80,
+                  icon: Icons.settings_rounded,
+                  iconColor: const Color(0xFF607D8B), // Blue-gray
+                  isFullWidth: true,
                   onTap: () {
                     // Navigate to settings
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text("Settings coming soon!"),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        backgroundColor: const Color(0xFF607D8B),
+                      ),
+                    );
                   },
                 ),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -217,37 +243,358 @@ class _HomeDashboardState extends State<HomeDashboard> {
     );
   }
 
-  Widget _buildMenuButton({
+  Widget _buildLogoutButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: IconButton(
+        onPressed: () async {
+          final navigator = Navigator.of(context);
+          await AuthService().signOut();
+          if (mounted) {
+            navigator.pushReplacement(
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          }
+        },
+        icon: const Icon(
+          Icons.logout_rounded,
+          color: Color(0xFFFF5252),
+        ), // Soft red for logout
+        tooltip: 'Logout',
+      ),
+    );
+  }
+
+  Widget _buildConnectionStatus() {
+    final statusColor = _isConnected ? Colors.green : Colors.orange;
+    final statusBgColor = _isConnected
+        ? const Color(0xFFE8F5E9)
+        : const Color(0xFFFFF3E0);
+    final statusText = _isConnected ? 'Device Connected' : 'Not Connected';
+    final statusIcon = _isConnected
+        ? Icons.bluetooth_connected_rounded
+        : Icons.bluetooth_disabled_rounded;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const BLEDeviceScreen()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.9),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: statusColor.withValues(alpha: 0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: statusBgColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: statusColor.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(statusIcon, color: statusColor, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Status',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  statusText,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: Colors.black26,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroBanner() {
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: const [
+                Color(0xFF1565C0), // Deeper blue
+                Color(0xFF1976D2),
+                Color(0xFF42A5F5),
+                Color(0xFF64B5F6), // Lighter blue for shimmer
+              ],
+              stops: [
+                0.0,
+                0.3 + (_shimmerAnimation.value * 0.1),
+                0.6 + (_shimmerAnimation.value * 0.1),
+                1.0,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1976D2).withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
+                blurRadius: 30,
+                offset: const Offset(0, 15),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hasthaartha',
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Bridging communication gaps with smart gestures.',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFFE3F2FD),
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.waving_hand_rounded, // More relevant to sign language
+                  size: 36,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPrimaryActionButton({
     required String title,
-    double? width,
-    required double height,
+    required IconData icon,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: width,
-        height: height,
+        height: 70,
         decoration: BoxDecoration(
-          color: const Color(0xFF1A3B8C), // Dark Blue
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF2962FF), Color(0xFF448AFF)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: const Color(0xFF2962FF).withValues(alpha: 0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
-        child: Center(
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 28),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuCard({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+    bool isFullWidth = false,
+  }) {
+    final isPressed = _pressedCard == title;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressedCard = title),
+      onTapUp: (_) {
+        setState(() => _pressedCard = '');
+        onTap();
+      },
+      onTapCancel: () => setState(() => _pressedCard = ''),
+      child: AnimatedScale(
+        scale: isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        child: Container(
+          height: isFullWidth ? 90 : 160,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.9),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: iconColor.withValues(alpha: 0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
+          child: isFullWidth
+              ? Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: iconColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(icon, color: iconColor, size: 24),
+                    ),
+                    const SizedBox(width: 20),
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF1A1A1A),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.black.withValues(alpha: 0.3),
+                      size: 18,
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: iconColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: iconColor, size: 28),
+                    ),
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF1A1A1A),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
