@@ -52,14 +52,18 @@ class AuthService {
     String password,
   ) async {
     try {
+      print('🔐 AUTH: Attempting sign in for: $email');
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      print('✅ AUTH: Sign in successful for: ${credential.user?.email}');
       return credential;
-    } on FirebaseAuthException {
+    } on FirebaseAuthException catch (e) {
+      print('❌ AUTH ERROR: Code=${e.code}, Message=${e.message}');
       rethrow;
     } catch (e) {
+      print('❌ AUTH UNEXPECTED ERROR: $e');
       throw Exception(e.toString());
     }
   }

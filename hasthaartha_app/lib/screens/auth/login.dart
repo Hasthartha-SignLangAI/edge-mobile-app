@@ -30,8 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _checkConnectivity();
 
-    _connectivitySubscription =
-        Connectivity().onConnectivityChanged.listen((results) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      results,
+    ) {
       // Newer connectivity_plus can emit a list of active interfaces
       final isOffline = results.contains(ConnectivityResult.none);
       if (!mounted) return;
@@ -75,10 +76,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signIn() async {
+    print('🚀 LOGIN: Sign in button pressed');
+
     if (_isOffline) {
+      print('⚠️ LOGIN: Offline detected, aborting');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("No internet connection. First sign-in requires internet."),
+          content: Text(
+            "No internet connection. First sign-in requires internet.",
+          ),
         ),
       );
       return;
@@ -87,7 +93,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final pass = _passwordController.text.trim();
 
+    print('📧 LOGIN: Email=$email, Password length=${pass.length}');
+
     if (email.isEmpty || pass.isEmpty) {
+      print('⚠️ LOGIN: Empty credentials');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter both email and password")),
       );
@@ -95,30 +104,49 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
+    print('⏳ LOGIN: Loading state set to true');
 
     try {
-      await _authService.signInWithEmailPassword(email, pass);
+      print('🔄 LOGIN: Calling auth service...');
+      final result = await _authService.signInWithEmailPassword(email, pass);
+      print('✅ LOGIN: Auth service returned: ${result?.user?.email}');
 
       // FAILSAFE:
       // If LoginScreen is not currently rendered by AuthGate (due to navigation),
       // this ensures we land back on AuthGate which will show HomeDashboard.
-      if (!mounted) return;
+      if (!mounted) {
+        print('⚠️ LOGIN: Widget not mounted, skipping navigation');
+        return;
+      }
+
+      print('🧭 LOGIN: Navigating to AuthGate...');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const AuthGate()),
       );
+      print('✅ LOGIN: Navigation complete');
     } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_friendlyAuthError(e))),
+      print(
+        '❌ LOGIN: FirebaseAuthException caught - Code: ${e.code}, Message: ${e.message}',
       );
+      if (!mounted) return;
+      final errorMsg = _friendlyAuthError(e);
+      print('📱 LOGIN: Showing error to user: $errorMsg');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMsg)));
     } catch (e) {
+      print('❌ LOGIN: Unexpected error caught: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
-      if (!mounted) return;
+      if (!mounted) {
+        print('⚠️ LOGIN: Widget not mounted in finally block');
+        return;
+      }
+      print('⏹️ LOGIN: Setting loading to false');
       setState(() => _isLoading = false);
     }
   }
@@ -181,8 +209,10 @@ class _LoginScreenState extends State<LoginScreen> {
             if (_isOffline) ...[
               const SizedBox(height: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(8),
@@ -191,8 +221,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.wifi_off,
-                        color: Color(0xFFEF4444), size: 18),
+                    const Icon(
+                      Icons.wifi_off,
+                      color: Color(0xFFEF4444),
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     const Text(
                       "No internet. First sign-in requires internet.",
@@ -282,7 +315,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const RegisterScreen()),
+                          builder: (_) => const RegisterScreen(),
+                        ),
                       );
                     },
                     child: Text(
@@ -347,18 +381,17 @@ class _LoginScreenState extends State<LoginScreen> {
           hintText: hintText,
           hintStyle: TextStyle(color: Colors.grey[600]),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Colors.transparent),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Color(0xFF007BFF),
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Color(0xFF007BFF), width: 2),
           ),
         ),
       ),
@@ -373,9 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
         color: const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Center(
-        child: Icon(icon, color: Colors.black, size: 30),
-      ),
+      child: Center(child: Icon(icon, color: Colors.black, size: 30)),
     );
   }
 }

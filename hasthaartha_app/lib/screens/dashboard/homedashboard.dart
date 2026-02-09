@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:hasthaartha_app/screens/auth/login.dart';
 import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
@@ -15,7 +16,32 @@ class HomeDashboard extends StatefulWidget {
   State<HomeDashboard> createState() => _HomeDashboardState();
 }
 
-class _HomeDashboardState extends State<HomeDashboard> {
+class _HomeDashboardState extends State<HomeDashboard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _shimmerController;
+  late Animation<double> _shimmerAnimation;
+  bool _isConnected = true; // Track BLE connection status
+  String _pressedCard = ''; // Track which card is being pressed
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+
+    _shimmerAnimation = Tween<double>(begin: -2, end: 2).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,7 +76,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       children: [
                         Text(
                           'Welcome back,',
-                          style: TextStyle(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             color: Colors.blueGrey[600],
                             fontWeight: FontWeight.w500,
@@ -58,10 +84,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
                         ),
                         Text(
                           widget.userName,
-                          style: const TextStyle(
+                          style: GoogleFonts.inter(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0D47A1), // Deep Blue
+                            color: const Color(0xFF0D47A1), // Deep Blue
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -110,15 +136,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
                 const SizedBox(height: 25),
 
-                // Grid Menu
+                // Grid Menu - 2x2 Layout
                 Row(
                   children: [
                     Expanded(
                       child: _buildMenuCard(
                         title: 'History',
                         icon: Icons.history_rounded,
-                        colorStart: const Color(0xFF1A3B8C),
-                        colorEnd: const Color(0xFF2C56B5),
+                        iconColor: const Color(0xFF1976D2), // Blue
                         onTap: () {
                           Navigator.push(
                             context,
@@ -134,12 +159,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       child: _buildMenuCard(
                         title: 'Gestures',
                         icon: Icons.back_hand_rounded,
-                        colorStart: const Color(
-                          0xFF00695C,
-                        ), // Teal-ish for variety but keeping theme harmony
-                        colorEnd: const Color(0xFF00897B),
+                        iconColor: const Color(0xFF00897B), // Teal
                         onTap: () {
-                          // Navigate to gestures
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -154,15 +175,73 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
                 const SizedBox(height: 16),
 
+                // Second Row of Grid
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildMenuCard(
+                        title: 'Profile',
+                        icon: Icons.person_rounded,
+                        iconColor: const Color(0xFF8E24AA), // Purple
+                        onTap: () {
+                          // Navigate to profile
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text("Profile coming soon!"),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              backgroundColor: const Color(0xFF8E24AA),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildMenuCard(
+                        title: 'About',
+                        icon: Icons.info_rounded,
+                        iconColor: const Color(0xFFFF6F00), // Orange
+                        onTap: () {
+                          // Navigate to about
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text("About page coming soon!"),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              backgroundColor: const Color(0xFFFF6F00),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
                 // Settings Full Width
                 _buildMenuCard(
                   title: 'Settings',
                   icon: Icons.settings_rounded,
+                  iconColor: const Color(0xFF607D8B), // Blue-gray
                   isFullWidth: true,
-                  colorStart: const Color(0xFF455A64),
-                  colorEnd: const Color(0xFF607D8B),
                   onTap: () {
                     // Navigate to settings
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text("Settings coming soon!"),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        backgroundColor: const Color(0xFF607D8B),
+                      ),
+                    );
                   },
                 ),
 
@@ -208,6 +287,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   Widget _buildConnectionStatus() {
+    final statusColor = _isConnected ? Colors.green : Colors.orange;
+    final statusBgColor = _isConnected
+        ? const Color(0xFFE8F5E9)
+        : const Color(0xFFFFF3E0);
+    final statusText = _isConnected ? 'Device Connected' : 'Not Connected';
+    final statusIcon = _isConnected
+        ? Icons.bluetooth_connected_rounded
+        : Icons.bluetooth_disabled_rounded;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -219,17 +307,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.6),
+          color: Colors.white.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.8),
+            color: Colors.white.withValues(alpha: 0.9),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFB3D9FF).withValues(alpha: 0.3),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 15,
               offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: statusColor.withValues(alpha: 0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -238,37 +331,33 @@ class _HomeDashboardState extends State<HomeDashboard> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: statusBgColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.withValues(alpha: 0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.bluetooth_connected_rounded,
-                color: Colors.green,
-                size: 22,
-              ),
+              child: Icon(statusIcon, color: statusColor, size: 22),
             ),
             const SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'Status',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: Colors.black54,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  'Device Connected',
-                  style: TextStyle(
+                  statusText,
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     color: Colors.black87,
                     fontWeight: FontWeight.bold,
@@ -289,65 +378,94 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   Widget _buildHeroBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1976D2), Color(0xFF42A5F5)], // Rich Blue Gradient
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1976D2).withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Hasthaartha',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Bridging communication gaps with smart gestures.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFFE3F2FD),
-                    height: 1.4,
-                  ),
-                ),
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: const [
+                Color(0xFF1565C0), // Deeper blue
+                Color(0xFF1976D2),
+                Color(0xFF42A5F5),
+                Color(0xFF64B5F6), // Lighter blue for shimmer
               ],
+              stops: [
+                0.0,
+                0.3 + (_shimmerAnimation.value * 0.1),
+                0.6 + (_shimmerAnimation.value * 0.1),
+                1.0,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1976D2).withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
+                blurRadius: 30,
+                offset: const Offset(0, 15),
+              ),
+            ],
           ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.graphic_eq_rounded, // Sound/Gesture wave representative
-              size: 32,
-              color: Colors.white,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hasthaartha',
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Bridging communication gaps with smart gestures.',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFFE3F2FD),
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.waving_hand_rounded, // More relevant to sign language
+                  size: 36,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -382,7 +500,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             const SizedBox(width: 12),
             Text(
               title,
-              style: const TextStyle(
+              style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -398,81 +516,97 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget _buildMenuCard({
     required String title,
     required IconData icon,
-    required Color colorStart,
-    required Color colorEnd,
+    required Color iconColor,
     required VoidCallback onTap,
     bool isFullWidth = false,
   }) {
+    final isPressed = _pressedCard == title;
+
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: isFullWidth ? 90 : 160,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [colorStart, colorEnd],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: colorStart.withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+      onTapDown: (_) => setState(() => _pressedCard = title),
+      onTapUp: (_) {
+        setState(() => _pressedCard = '');
+        onTap();
+      },
+      onTapCancel: () => setState(() => _pressedCard = ''),
+      child: AnimatedScale(
+        scale: isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        child: Container(
+          height: isFullWidth ? 90 : 160,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.9),
+              width: 1.5,
             ),
-          ],
-        ),
-        child: isFullWidth
-            ? Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: Colors.white, size: 24),
-                  ),
-                  const SizedBox(width: 20),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: Colors.white54,
-                    size: 18,
-                  ),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, color: Colors.white, size: 28),
-                  ),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
+              BoxShadow(
+                color: iconColor.withValues(alpha: 0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: isFullWidth
+              ? Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: iconColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(icon, color: iconColor, size: 24),
+                    ),
+                    const SizedBox(width: 20),
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF1A1A1A),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.black.withValues(alpha: 0.3),
+                      size: 18,
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: iconColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: iconColor, size: 28),
+                    ),
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF1A1A1A),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
