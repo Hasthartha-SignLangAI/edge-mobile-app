@@ -46,6 +46,8 @@ dependencies:
   fl_chart: ^0.70.1
   audioplayers: ^6.1.0
   sensors_plus: ^6.0.1
+  onnxruntime: ^1.4.1
+
 
 dev_dependencies:
   flutter_test:
@@ -71,6 +73,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/models/cnn_lstm_with_idle.onnx
+    - assets/models/label_map.json
+    - assets/models/scaler_params.json
+    - assets/test/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
