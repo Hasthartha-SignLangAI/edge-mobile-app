@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:hasthaartha_app/screens/auth/login.dart';
@@ -7,25 +8,57 @@ import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
 import 'package:hasthaartha_app/screens/translation/realtime_translation_screen.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
 import 'package:hasthaartha_app/screens/history/history.dart';
+import 'package:hasthaartha_app/main.dart'; // for onnxServiceProvider
 
-class HomeDashboard extends StatefulWidget {
+class HomeDashboard extends ConsumerStatefulWidget {
   final String userName;
   const HomeDashboard({super.key, required this.userName});
 
   @override
-  State<HomeDashboard> createState() => _HomeDashboardState();
+  ConsumerState<HomeDashboard> createState() => _HomeDashboardState();
 }
 
-class _HomeDashboardState extends State<HomeDashboard>
+class _HomeDashboardState extends ConsumerState<HomeDashboard>
     with SingleTickerProviderStateMixin {
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
-  bool _isConnected = true; // Track BLE connection status
-  String _pressedCard = ''; // Track which card is being pressed
+  bool _isConnected = true;
+  String _pressedCard = '';
 
   @override
   void initState() {
     super.initState();
+
+    //   Future.microtask(() async {
+    //   final onnx = ref.read(onnxServiceProvider);
+
+    //   List<List<double>> dummy =
+    //       List.generate(512, (_) => List.generate(9, (_) => 0.1));
+
+    //   final word = await onnx.predictWord(dummy);
+
+    //   debugPrint("🔥 Predicted Word: $word");
+    // });
+
+    Future.microtask(() async {
+      final onnx = ref.read(onnxServiceProvider);
+
+      final frames = await onnx.loadTxtFrames("assets/test/boru_5.txt");
+
+      if (frames.length < 512) {
+        print("Not enough frames: ${frames.length}");
+        return;
+      }
+
+      // Center crop like training
+      int start = (frames.length - 512) ~/ 2;
+      final window = frames.sublist(start, start + 512);
+
+      final word = await onnx.predictWord(window);
+
+      print("🔥 REAL TXT PREDICTION: $word");
+    });
+
     _shimmerController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -51,11 +84,7 @@ class _HomeDashboardState extends State<HomeDashboard>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF0F7FF), // Very light blue
-              Color(0xFFDEEDFF), // Soft blue
-              Color(0xFFC7E2FF), // Medium soft blue
-            ],
+            colors: [Color(0xFFF0F7FF), Color(0xFFDEEDFF), Color(0xFFC7E2FF)],
             stops: [0.0, 0.5, 1.0],
           ),
         ),
@@ -67,6 +96,7 @@ class _HomeDashboardState extends State<HomeDashboard>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
+
                 // Header Area
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -87,7 +117,7 @@ class _HomeDashboardState extends State<HomeDashboard>
                           style: GoogleFonts.inter(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0D47A1), // Deep Blue
+                            color: const Color(0xFF0D47A1),
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -99,20 +129,17 @@ class _HomeDashboardState extends State<HomeDashboard>
 
                 const SizedBox(height: 25),
 
-                // Status Bar (Connected)
                 _buildConnectionStatus(),
 
                 const SizedBox(height: 30),
 
-                // Hero Banner
                 _buildHeroBanner(),
 
                 const SizedBox(height: 30),
 
-                // Primary Action
                 _buildPrimaryActionButton(
                   title: 'Start Translating',
-                  icon: Icons.mic_none_rounded, // Or gesture icon
+                  icon: Icons.mic_none_rounded,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -125,14 +152,13 @@ class _HomeDashboardState extends State<HomeDashboard>
 
                 const SizedBox(height: 25),
 
-                // Grid Menu - 2x2 Layout
                 Row(
                   children: [
                     Expanded(
                       child: _buildMenuCard(
                         title: 'History',
                         icon: Icons.history_rounded,
-                        iconColor: const Color(0xFF1976D2), // Blue
+                        iconColor: const Color(0xFF1976D2),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -148,7 +174,7 @@ class _HomeDashboardState extends State<HomeDashboard>
                       child: _buildMenuCard(
                         title: 'Gestures',
                         icon: Icons.back_hand_rounded,
-                        iconColor: const Color(0xFF00897B), // Teal
+                        iconColor: const Color(0xFF00897B),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -164,16 +190,14 @@ class _HomeDashboardState extends State<HomeDashboard>
 
                 const SizedBox(height: 16),
 
-                // Second Row of Grid
                 Row(
                   children: [
                     Expanded(
                       child: _buildMenuCard(
                         title: 'Profile',
                         icon: Icons.person_rounded,
-                        iconColor: const Color(0xFF8E24AA), // Purple
+                        iconColor: const Color(0xFF8E24AA),
                         onTap: () {
-                          // Navigate to profile
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Text("Profile coming soon!"),
@@ -192,9 +216,8 @@ class _HomeDashboardState extends State<HomeDashboard>
                       child: _buildMenuCard(
                         title: 'About',
                         icon: Icons.info_rounded,
-                        iconColor: const Color(0xFFFF6F00), // Orange
+                        iconColor: const Color(0xFFFF6F00),
                         onTap: () {
-                          // Navigate to about
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Text("About page coming soon!"),
@@ -213,14 +236,12 @@ class _HomeDashboardState extends State<HomeDashboard>
 
                 const SizedBox(height: 16),
 
-                // Settings Full Width
                 _buildMenuCard(
                   title: 'Settings',
                   icon: Icons.settings_rounded,
-                  iconColor: const Color(0xFF607D8B), // Blue-gray
+                  iconColor: const Color(0xFF607D8B),
                   isFullWidth: true,
                   onTap: () {
-                    // Navigate to settings
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text("Settings coming soon!"),
@@ -242,6 +263,10 @@ class _HomeDashboardState extends State<HomeDashboard>
       ),
     );
   }
+
+  // ===============================
+  // BELOW THIS IS 100% YOUR UI
+  // ===============================
 
   Widget _buildLogoutButton() {
     return Container(
@@ -266,10 +291,7 @@ class _HomeDashboardState extends State<HomeDashboard>
             );
           }
         },
-        icon: const Icon(
-          Icons.logout_rounded,
-          color: Color(0xFFFF5252),
-        ), // Soft red for logout
+        icon: const Icon(Icons.logout_rounded, color: Color(0xFFFF5252)),
         tooltip: 'Logout',
       ),
     );
@@ -376,10 +398,10 @@ class _HomeDashboardState extends State<HomeDashboard>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: const [
-                Color(0xFF1565C0), // Deeper blue
+                Color(0xFF1565C0),
                 Color(0xFF1976D2),
                 Color(0xFF42A5F5),
-                Color(0xFF64B5F6), // Lighter blue for shimmer
+                Color(0xFF64B5F6),
               ],
               stops: [
                 0.0,
@@ -446,7 +468,7 @@ class _HomeDashboardState extends State<HomeDashboard>
                   ],
                 ),
                 child: const Icon(
-                  Icons.waving_hand_rounded, // More relevant to sign language
+                  Icons.waving_hand_rounded,
                   size: 36,
                   color: Colors.white,
                 ),
