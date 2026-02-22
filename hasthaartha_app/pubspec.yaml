@@ -76,6 +76,8 @@ flutter:
     - assets/models/cnn_lstm_with_idle.onnx
     - assets/models/label_map.json
     - assets/models/scaler_params.json
+    - assets/models/encoder.onnx
+    - assets/models/fewshot_db.json
     - assets/test/
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -43,7 +43,7 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
     Future.microtask(() async {
       final onnx = ref.read(onnxServiceProvider);
 
-      final frames = await onnx.loadTxtFrames("assets/test/pata_5.txt");
+      final frames = await onnx.loadTxtFrames("assets/test/boru_5.txt");
 
       if (frames.length < 512) {
         print("Not enough frames: ${frames.length}");
