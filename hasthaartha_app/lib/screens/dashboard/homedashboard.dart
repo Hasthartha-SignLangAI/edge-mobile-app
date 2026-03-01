@@ -7,6 +7,7 @@ import 'package:hasthaartha_app/screens/auth/login.dart';
 import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
 import 'package:hasthaartha_app/screens/translation/realtime_translation_screen.dart';
+import 'package:hasthaartha_app/screens/translation/sensor_monitor_screen.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
 import 'package:hasthaartha_app/screens/history/history.dart';
 import 'package:hasthaartha_app/main.dart';
@@ -232,16 +233,12 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                         icon: Icons.info_rounded,
                         iconColor: const Color(0xFFFF6F00),
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text("About page coming soon!"),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              backgroundColor: const Color(0xFFFF6F00),
-                            ),
-                          );
+                          Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SensorMonitorScreen(),
+                          ),
+                        );
                         },
                       ),
                     ),

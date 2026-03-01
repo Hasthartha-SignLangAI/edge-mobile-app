@@ -41,6 +41,12 @@ class BlePipelineService {
   Stream<BluetoothConnectionState> get connectionStream =>
       _connectionController.stream;
 
+  // =========================================================
+  final StreamController<List<double>> _frameController =
+    StreamController<List<double>>.broadcast();
+
+  Stream<List<double>> get frameStream => _frameController.stream;
+
   int _lastSeq = -1;
   bool _calibrated = false;
   final List<List<double>> _idleBuffer = [];
@@ -211,6 +217,9 @@ class BlePipelineService {
 
     final payload = data.sublist(12, 12 + 18);
     final frame9 = _decodeFrame(payload);
+
+    // send to the UI
+    _frameController.add(frame9);
 
     if (!_calibrated) {
       _idleBuffer.add(frame9);
