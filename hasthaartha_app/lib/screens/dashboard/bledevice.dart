@@ -1,51 +1,78 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BLEDeviceScreen extends StatefulWidget {
+import 'package:hasthaartha_app/main.dart';
+import 'package:hasthaartha_app/services/ble_pipeline_service.dart';
+
+class BLEDeviceScreen extends ConsumerStatefulWidget {
   const BLEDeviceScreen({super.key});
 
   @override
-  State<BLEDeviceScreen> createState() => _BLEDeviceScreenState();
+  ConsumerState<BLEDeviceScreen> createState() =>
+      _BLEDeviceScreenState();
 }
 
-class _BLEDeviceScreenState extends State<BLEDeviceScreen>
+
+
+class _BLEDeviceScreenState extends ConsumerState<BLEDeviceScreen>
     with TickerProviderStateMixin {
 
   bool isScanning = false;
-  bool isConnected = false;
+  List<ScanResult> scanResults = [];
+
+  BluetoothConnectionState connectionState =
+      BluetoothConnectionState.disconnected;
+
+  late BlePipelineService bleService;
 
   late AnimationController _radarController;
-
-  final List<ScanResult> scanResults = [];
-  BluetoothDevice? connectedDevice;
+  StreamSubscription<BluetoothConnectionState>? _connSub;
 
   @override
   void initState() {
     super.initState();
 
+    bleService = ref.read(blePipelineProvider);
+
     _radarController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     );
+
+    // 🔥 1️⃣ Immediately sync existing connection state
+    _initializeConnectionState();
+
+    // 🔥 2️⃣ Continue listening for updates
+    _connSub = bleService.connectionStream.listen((state) {
+      setState(() {
+        connectionState = state;
+      });
+    });
+  }
+
+  // =====================================================
+  // 🔥 SYNC EXISTING CONNECTION
+  // =====================================================
+
+  Future<void> _initializeConnectionState() async {
+    final device = bleService.device;
+
+    if (device != null) {
+      final state = await device.connectionState.first;
+
+      setState(() {
+        connectionState = state;
+      });
+    }
   }
 
   @override
   void dispose() {
+    _connSub?.cancel();
     _radarController.dispose();
     super.dispose();
-  }
-
-  // =====================================================
-  // PERMISSIONS
-  // =====================================================
-
-  Future<void> _requestPermissions() async {
-    await [
-      Permission.bluetoothScan,
-      Permission.bluetoothConnect,
-      Permission.location,
-    ].request();
   }
 
   // =====================================================
@@ -53,7 +80,11 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen>
   // =====================================================
 
   Future<void> _startScanning() async {
-    await _requestPermissions();
+
+    // ❌ Prevent scan if already connected
+    if (connectionState == BluetoothConnectionState.connected) {
+      return;
+    }
 
     setState(() {
       isScanning = true;
@@ -62,20 +93,18 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen>
 
     _radarController.repeat();
 
-    final Map<DeviceIdentifier, ScanResult> unique = {};
+    try {
+      final results = await bleService.scan();
 
-    FlutterBluePlus.scanResults.listen((results) {
-      for (var r in results) {
-        unique[r.device.remoteId] = r;
-      }
-    });
+      setState(() {
+        scanResults = results;
+      });
 
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 5));
-    await Future.delayed(const Duration(seconds: 5));
-
+    } catch (e) {
+      print("Scan error: $e");
+    }
 
     setState(() {
-      scanResults.addAll(unique.values);
       isScanning = false;
     });
 
@@ -88,23 +117,18 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen>
 
   Future<void> _connectToDevice(BluetoothDevice device) async {
     try {
-      await device.connect(autoConnect: false);
-
-      setState(() {
-        connectedDevice = device;
-        isConnected = true;
-      });
-
-      // Navigate to prediction screen
-      Navigator.pushNamed(
-        context,
-        "/prediction",
-        arguments: device,
-      );
-
+      await bleService.connect(device);
     } catch (e) {
       print("Connection error: $e");
     }
+  }
+
+  // =====================================================
+  // DISCONNECT
+  // =====================================================
+
+  Future<void> _disconnect() async {
+    await bleService.disconnect();
   }
 
   // =====================================================
@@ -113,6 +137,8 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final connectedDevice = bleService.device;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -158,7 +184,7 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen>
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: const Color(0xFF4A90E2)
-                                  .withValues(alpha: 0.2),
+                                  .withOpacity(0.2),
                             ),
                           ),
                         ),
@@ -200,16 +226,55 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen>
 
                 const SizedBox(height: 30),
 
-                if (isConnected && connectedDevice != null)
-                  Text(
-                    "Connected: ${connectedDevice!.platformName}",
-                    style: const TextStyle(
+                // =====================================================
+                // CONNECTION STATUS (NOW PERSISTENT)
+                // =====================================================
+
+                if (connectionState == BluetoothConnectionState.connected &&
+                    connectedDevice != null)
+                  Column(
+                    children: [
+                      Text(
+                        "Connected: ${connectedDevice.platformName}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        onPressed: _disconnect,
+                        icon: const Icon(Icons.logout),
+                        label: const Text("Disconnect"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                      ),
+                    ],
+                  )
+                else if (connectionState ==
+                    BluetoothConnectionState.connecting)
+                  const Text(
+                    "Connecting...",
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: Colors.orange,
+                    ),
+                  )
+                else
+                  const Text(
+                    "Not Connected",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black54,
                     ),
                   ),
 
                 const SizedBox(height: 20),
+
+                // =====================================================
+                // SCAN RESULTS
+                // =====================================================
 
                 Expanded(
                   child: ListView.builder(
@@ -245,7 +310,7 @@ class RadarLinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final paint = Paint()
-      ..color = const Color(0xFF4A90E2)
+      ..color = const Color(0xFF4A90E2).withOpacity(0.6)
       ..strokeWidth = 2;
 
     final radius = size.width / 2;

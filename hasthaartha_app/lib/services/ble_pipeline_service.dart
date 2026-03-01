@@ -8,6 +8,19 @@ import 'onnx_servce.dart';
 import 'realtime_engine.dart';
 
 class BlePipelineService {
+  // =========================================================
+  // 🔥 YOUR CUSTOM GATT UUIDs
+  // =========================================================
+
+  static const String SERVICE_UUID =
+      "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
+
+  static const String TX_UUID =
+      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"; // Notify
+
+  static const String CTRL_RX_UUID =
+      "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"; // Write
+
   final OnnxService onnx;
   final RealtimeGestureEngine engine;
 
@@ -17,8 +30,16 @@ class BlePipelineService {
 
   StreamSubscription<List<ScanResult>>? _scanSub;
   StreamSubscription<List<int>>? _notifySub;
+  StreamSubscription<BluetoothConnectionState>? _connSub;
 
-  final StreamController<String> gestureStream = StreamController.broadcast();
+  final StreamController<String> gestureStream =
+      StreamController.broadcast();
+
+  final StreamController<BluetoothConnectionState> _connectionController =
+    StreamController<BluetoothConnectionState>.broadcast();
+
+  Stream<BluetoothConnectionState> get connectionStream =>
+      _connectionController.stream;
 
   int _lastSeq = -1;
   bool _calibrated = false;
@@ -29,19 +50,20 @@ class BlePipelineService {
     required this.engine,
   });
 
+
   // =========================================================
-  // SCAN
+  // SCAN (Filtered by SERVICE UUID)
   // =========================================================
-  Future<List<ScanResult>> scan({Duration timeout = const Duration(seconds: 5)}) async {
+  Future<List<ScanResult>> scan({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
     await _requestPermissions();
 
     final Map<DeviceIdentifier, ScanResult> unique = {};
 
-    // stop any previous scan
     await FlutterBluePlus.stopScan().catchError((_) {});
-
-    // listen results
     _scanSub?.cancel();
+
     _scanSub = FlutterBluePlus.scanResults.listen((results) {
       for (final r in results) {
         unique[r.device.remoteId] = r;
@@ -52,13 +74,13 @@ class BlePipelineService {
       await FlutterBluePlus.turnOn();
     }
 
-    // start scan
-    await FlutterBluePlus.startScan(timeout: timeout);
+    await FlutterBluePlus.startScan(
+      withServices: [Guid(SERVICE_UUID)],
+      timeout: timeout,
+    );
 
-    // wait until scan finishes
     await Future.delayed(timeout);
 
-    // stop scan + cleanup
     await FlutterBluePlus.stopScan().catchError((_) {});
     await _scanSub?.cancel();
     _scanSub = null;
@@ -72,15 +94,18 @@ class BlePipelineService {
   Future<void> connect(BluetoothDevice d) async {
     await _requestPermissions();
 
-    // disconnect previous if any
     await disconnect();
 
     device = d;
 
     await device!.connect(autoConnect: false);
 
-    // optional: request larger MTU (Android)
-    // ignore errors on devices that don’t support it
+    // 🔥 Listen connection state
+    _connSub?.cancel();
+    _connSub = device!.connectionState.listen((state) {
+      _connectionController.add(state);
+    });
+
     await device!.requestMtu(247).catchError((_) {});
 
     final services = await device!.discoverServices();
@@ -89,33 +114,36 @@ class BlePipelineService {
     _ctrlChar = null;
 
     for (final s in services) {
-      for (final c in s.characteristics) {
-        // IMPORTANT:
-        // In production, you should match by SERVICE UUID + CHAR UUID
-        // Here we pick first notify as stream, first write as ctrl
-        if (_streamChar == null && c.properties.notify) {
-          _streamChar = c;
-        }
-        if (_ctrlChar == null && (c.properties.write || c.properties.writeWithoutResponse)) {
-          _ctrlChar = c;
+      if (s.uuid.toString().toUpperCase() == SERVICE_UUID) {
+        for (final c in s.characteristics) {
+          final uuid = c.uuid.toString().toUpperCase();
+
+          if (uuid == TX_UUID) {
+            _streamChar = c;
+          }
+
+          if (uuid == CTRL_RX_UUID) {
+            _ctrlChar = c;
+          }
         }
       }
     }
 
     if (_streamChar == null || _ctrlChar == null) {
-      throw Exception("BLE characteristics not found (notify/write). Check UUIDs.");
+      throw Exception("Required BLE characteristics not found.");
     }
 
-    // enable notifications
     await _streamChar!.setNotifyValue(true);
 
     _notifySub?.cancel();
-    _notifySub = _streamChar!.lastValueStream.listen(_onPacket);
+    _notifySub =
+        _streamChar!.lastValueStream.listen(_onPacket);
 
-    // start streaming (control packet example)
-    await _ctrlChar!.write([0x01], withoutResponse: _ctrlChar!.properties.writeWithoutResponse);
+    await _ctrlChar!.write(
+      [0x01],
+      withoutResponse: _ctrlChar!.properties.writeWithoutResponse,
+    );
 
-    // reset state for a clean session
     _lastSeq = -1;
     _calibrated = false;
     _idleBuffer.clear();
@@ -126,10 +154,12 @@ class BlePipelineService {
   // =========================================================
   Future<void> disconnect() async {
     _notifySub?.cancel();
-    _notifySub = null;
+    _connSub?.cancel();
 
     if (_streamChar != null) {
-      await _streamChar!.setNotifyValue(false).catchError((_) {});
+      await _streamChar!
+          .setNotifyValue(false)
+          .catchError((_) {});
     }
 
     if (device != null) {
@@ -143,60 +173,50 @@ class BlePipelineService {
     _lastSeq = -1;
     _calibrated = false;
     _idleBuffer.clear();
+
+    _connectionController.add(BluetoothConnectionState.disconnected);
   }
 
   void dispose() {
     _scanSub?.cancel();
     _notifySub?.cancel();
+    _connSub?.cancel();
     gestureStream.close();
+    _connectionController.close();
   }
 
   // =========================================================
   // PACKET HANDLER
   // =========================================================
   void _onPacket(List<int> data) {
-    // you may receive partial packets depending on your firmware/MTU strategy
-    // For now, assume one notify = one full packet
     if (data.length < 32) return;
     if (data[0] != 0xAA || data[1] != 0x55) return;
 
     final seq = (data[4] << 8) | data[5];
 
     if (_lastSeq != -1 && seq != _lastSeq + 1) {
-      // not fatal — just log
-      // ignore: avoid_print
-      print("⚠ Packet drop detected: last=$_lastSeq now=$seq");
+      print("⚠ Packet drop detected");
     }
     _lastSeq = seq;
 
-    // verify CRC
-    final receivedCrc = (data[data.length - 2] << 8) | data[data.length - 1];
-    final calculatedCrc = _crc16(data.sublist(0, data.length - 2));
+    final receivedCrc =
+        (data[data.length - 2] << 8) | data[data.length - 1];
 
-    if (receivedCrc != calculatedCrc) {
-      // ignore: avoid_print
-      print("⚠ CRC mismatch");
-      return;
-    }
+    final calculatedCrc =
+        _crc16(data.sublist(0, data.length - 2));
 
-    // payload offset MUST match your ESP32 packet format
-    // here: payload starts at byte 12, length 18 (9 * int16)
+    if (receivedCrc != calculatedCrc) return;
+
     if (data.length < 12 + 18 + 2) return;
-    final payload = data.sublist(12, 12 + 18);
 
+    final payload = data.sublist(12, 12 + 18);
     final frame9 = _decodeFrame(payload);
 
-    // ==========================
-    // AUTO IDLE CALIBRATION
-    // ==========================
     if (!_calibrated) {
       _idleBuffer.add(frame9);
-
-      // 200 frames @100Hz ≈ 2 seconds idle
       if (_idleBuffer.length >= 200) {
         engine.calibrateIdle(_idleBuffer);
         _calibrated = true;
-        // ignore: avoid_print
         print("✅ Idle calibrated");
       }
       return;
@@ -209,26 +229,23 @@ class BlePipelineService {
   }
 
   // =========================================================
-  // DECODE INT16 FRAME
+  // DECODE
   // =========================================================
   List<double> _decodeFrame(List<int> p) {
     final bd = ByteData.sublistView(Uint8List.fromList(p));
-
     int i16(int o) => bd.getInt16(o, Endian.little);
 
-    final emg1 = i16(0).toDouble();
-    final emg2 = i16(2).toDouble();
-    final emg3 = i16(4).toDouble();
-
-    final ax = i16(6) / 10000.0;
-    final ay = i16(8) / 10000.0;
-    final az = i16(10) / 10000.0;
-
-    final gx = i16(12) / 100.0;
-    final gy = i16(14) / 100.0;
-    final gz = i16(16) / 100.0;
-
-    return [emg1, emg2, emg3, ax, ay, az, gx, gy, gz];
+    return [
+      i16(0).toDouble(),
+      i16(2).toDouble(),
+      i16(4).toDouble(),
+      i16(6) / 10000.0,
+      i16(8) / 10000.0,
+      i16(10) / 10000.0,
+      i16(12) / 100.0,
+      i16(14) / 100.0,
+      i16(16) / 100.0,
+    ];
   }
 
   // =========================================================
@@ -239,28 +256,20 @@ class BlePipelineService {
       final base = await onnx.predictWord(window);
       final few = await onnx.predictFewShot(window);
 
-      final finalGesture = _vote(base, few);
-      gestureStream.add(finalGesture);
+      gestureStream.add(base == few ? base : base);
     } catch (e) {
-      // ignore: avoid_print
       print("❌ Inference error: $e");
     }
   }
 
-  String _vote(String base, String few) {
-    if (base == few) return base;
-    return base; // base priority (we can upgrade later)
-  }
-
-  // =========================================================
-  // CRC16 (CCITT-FALSE poly 0x1021)
-  // =========================================================
   int _crc16(List<int> data) {
     int crc = 0xFFFF;
     for (final b in data) {
       crc ^= (b & 0xFF) << 8;
       for (int i = 0; i < 8; i++) {
-        crc = (crc & 0x8000) != 0 ? ((crc << 1) ^ 0x1021) : (crc << 1);
+        crc = (crc & 0x8000) != 0
+            ? ((crc << 1) ^ 0x1021)
+            : (crc << 1);
         crc &= 0xFFFF;
       }
     }
@@ -268,8 +277,6 @@ class BlePipelineService {
   }
 
   Future<void> _requestPermissions() async {
-    // Android 12+: scan/connect permissions
-    // Android <12: location is required for scan
     await [
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
