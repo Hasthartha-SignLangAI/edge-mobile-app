@@ -10,11 +10,12 @@ import 'localdb/isar_db.dart';
 import 'screens/splash/logoscreen.dart';
 
 final onnxServiceProvider = Provider<OnnxService>((ref) {
-  return OnnxService();
+  throw UnimplementedError("OnnxService must be overridden in main()");
 });
 
 final realtimeEngineProvider = Provider<RealtimeGestureEngine>((ref) {
-  return RealtimeGestureEngine();
+  final onnx = ref.read(onnxServiceProvider);
+  return RealtimeGestureEngine(onnx);
 });
 
 final blePipelineProvider = Provider<BlePipelineService>((ref) {

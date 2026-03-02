@@ -66,7 +66,7 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
       int start = (frames.length - 512) ~/ 2;
       final window = frames.sublist(start, start + 512);
 
-      final word = await onnx.predictWord(window);
+      final word = await onnx.basePredict(window);
 
       print("🔥 REAL TXT PREDICTION: $word");
     });

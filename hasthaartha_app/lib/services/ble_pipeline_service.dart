@@ -32,7 +32,7 @@ class BlePipelineService {
   StreamSubscription<List<int>>? _notifySub;
   StreamSubscription<BluetoothConnectionState>? _connSub;
 
-  final StreamController<String> gestureStream =
+  final StreamController<PredictionResult> gestureStream =
       StreamController.broadcast();
 
   final StreamController<BluetoothConnectionState> _connectionController =
@@ -194,7 +194,7 @@ class BlePipelineService {
   // =========================================================
   // PACKET HANDLER
   // =========================================================
-  void _onPacket(List<int> data) {
+  Future<void> _onPacket(List<int> data)async{
     if (data.length < 32) return;
     if (data[0] != 0xAA || data[1] != 0x55) return;
 
@@ -231,9 +231,9 @@ class BlePipelineService {
       return;
     }
 
-    final window = engine.pushFrame(frame9);
-    if (window != null) {
-      _runInference(window);
+    final result = await engine.pushFrame(frame9);
+    if (result != null){
+      gestureStream.add(result);
     }
   }
 
@@ -260,16 +260,16 @@ class BlePipelineService {
   // =========================================================
   // INFERENCE
   // =========================================================
-  Future<void> _runInference(List<List<double>> window) async {
-    try {
-      final base = await onnx.predictWord(window);
-      final few = await onnx.predictFewShot(window);
+  // Future<void> _runInference(List<List<double>> window) async {
+  //   try {
+  //     final base = await onnx.predictWord(window);
+  //     final few = await onnx.predictFewShot(window);
 
-      gestureStream.add(base == few ? base : base);
-    } catch (e) {
-      print("❌ Inference error: $e");
-    }
-  }
+  //     gestureStream.add(base == few ? base : base);
+  //   } catch (e) {
+  //     print("❌ Inference error: $e");
+  //   }
+  // }
 
   int _crc16(List<int> data) {
     int crc = 0xFFFF;
