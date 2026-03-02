@@ -49,6 +49,7 @@ dependencies:
   onnxruntime: ^1.4.1
   flutter_blue_plus: ^1.32.7
   permission_handler: ^11.3.1
+  flutter_tts: ^3.8.5
 
 
 dev_dependencies:

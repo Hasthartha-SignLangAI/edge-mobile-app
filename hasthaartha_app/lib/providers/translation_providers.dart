@@ -1,39 +1,53 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
+import 'package:hasthaartha_app/main.dart'; // for blePipelineProvider
 import 'package:hasthaartha_app/models/gesture_data.dart';
 import 'package:hasthaartha_app/models/translation_state.dart';
 
-/// Provider for BLE connection state
-/// In production, this would connect to actual BLE service
-final bleConnectionProvider =
-    StateNotifierProvider<BLEConnectionNotifier, BLEConnectionState>((ref) {
-      return BLEConnectionNotifier();
-    });
+/// ============================================================
+/// ✅ BLE connection state (NOW REAL - comes from BlePipelineService)
+/// ============================================================
+/// This provider listens to BlePipelineService.connectionStream and converts it
+/// into your existing BLEConnectionState model.
+///
+/// NOTE:
+/// - signalStrength is not available from the stream directly.
+///   (If you want RSSI, we can add a periodic readRssi() in BlePipelineService.)
+final bleConnectionProvider = StreamProvider<BLEConnectionState>((ref) async* {
+  final ble = ref.watch(blePipelineProvider);
 
-class BLEConnectionNotifier extends StateNotifier<BLEConnectionState> {
-  BLEConnectionNotifier() : super(BLEConnectionState.disconnected());
+  yield ble.device != null
+      ? BLEConnectionState.connected(
+          ble.device!.platformName.isNotEmpty
+              ? ble.device!.platformName
+              : ble.device!.remoteId.str,
+          0,
+        )
+      : BLEConnectionState.disconnected();
 
-  void connect(String deviceName) {
-    state = BLEConnectionState.connected(deviceName, 85);
+  await for (final state in ble.connectionStream) {
+    if (state == BluetoothConnectionState.connected &&
+        ble.device != null) {
+      yield BLEConnectionState.connected(
+        ble.device!.platformName.isNotEmpty
+            ? ble.device!.platformName
+            : ble.device!.remoteId.str,
+        0,
+      );
+    } else {
+      yield BLEConnectionState.disconnected();
+    }
   }
+});
 
-  void disconnect() {
-    state = BLEConnectionState.disconnected();
-  }
-
-  void updateSignalStrength(int strength) {
-    state = state.copyWith(signalStrength: strength);
-  }
-
-  void setError(String message) {
-    state = BLEConnectionState.error(message);
-  }
-}
-
-/// Provider for translation screen state
+/// ============================================================
+/// Translation screen state
+/// ============================================================
 final translationStateProvider =
     StateNotifierProvider<TranslationStateNotifier, TranslationState>((ref) {
-      return TranslationStateNotifier();
-    });
+  return TranslationStateNotifier();
+});
 
 class TranslationStateNotifier extends StateNotifier<TranslationState> {
   TranslationStateNotifier() : super(TranslationState.initial());
@@ -67,12 +81,13 @@ class TranslationStateNotifier extends StateNotifier<TranslationState> {
   }
 }
 
-/// Provider for current gesture data stream
-/// In production, this would receive data from ML inference service
+/// ============================================================
+/// Current gesture (updated by prediction stream)
+/// ============================================================
 final currentGestureProvider =
     StateNotifierProvider<CurrentGestureNotifier, GestureData>((ref) {
-      return CurrentGestureNotifier();
-    });
+  return CurrentGestureNotifier();
+});
 
 class CurrentGestureNotifier extends StateNotifier<GestureData> {
   CurrentGestureNotifier() : super(EmptyGestureData());
@@ -86,17 +101,15 @@ class CurrentGestureNotifier extends StateNotifier<GestureData> {
   }
 }
 
-/// Provider for debug mode toggle
+/// ============================================================
+/// Other UI controls / debug
+/// ============================================================
 final debugModeProvider = StateProvider<bool>((ref) => false);
 
-/// Provider for volume control
 final volumeProvider = StateProvider<double>((ref) => 0.8);
 
-/// Provider for audio playback state
 final audioPlaybackProvider = StateProvider<bool>((ref) => false);
 
-/// Provider for FPS counter (debug mode)
 final fpsCounterProvider = StateProvider<double>((ref) => 60.0);
 
-/// Provider for latency metrics (debug mode)
 final latencyMetricsProvider = StateProvider<int>((ref) => 0);
