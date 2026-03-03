@@ -1,23 +1,144 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BLEDeviceScreen extends StatefulWidget {
+import 'package:hasthaartha_app/main.dart';
+import 'package:hasthaartha_app/services/ble_pipeline_service.dart';
+
+class BLEDeviceScreen extends ConsumerStatefulWidget {
   const BLEDeviceScreen({super.key});
 
   @override
-  State<BLEDeviceScreen> createState() => _BLEDeviceScreenState();
+  ConsumerState<BLEDeviceScreen> createState() =>
+      _BLEDeviceScreenState();
 }
 
-class _BLEDeviceScreenState extends State<BLEDeviceScreen> {
-  // Mock data for other devices
-  final List<Map<String, dynamic>> otherDevices = [
-    {'name': 'Device Name'},
-    {'name': 'Device Name'},
-    {'name': 'Device Name'},
-    {'name': 'Device Name'},
-  ];
+
+
+class _BLEDeviceScreenState extends ConsumerState<BLEDeviceScreen>
+    with TickerProviderStateMixin {
+
+  bool isScanning = false;
+  List<ScanResult> scanResults = [];
+
+  BluetoothConnectionState connectionState =
+      BluetoothConnectionState.disconnected;
+
+  late BlePipelineService bleService;
+
+  late AnimationController _radarController;
+  StreamSubscription<BluetoothConnectionState>? _connSub;
+
+  @override
+  void initState() {
+    super.initState();
+
+    bleService = ref.read(blePipelineProvider);
+
+    _radarController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+
+    // 🔥 1️⃣ Immediately sync existing connection state
+    _initializeConnectionState();
+
+    // 🔥 2️⃣ Continue listening for updates
+    _connSub = bleService.connectionStream.listen((state) {
+      setState(() {
+        connectionState = state;
+      });
+    });
+  }
+
+  // =====================================================
+  // 🔥 SYNC EXISTING CONNECTION
+  // =====================================================
+
+  Future<void> _initializeConnectionState() async {
+    final device = bleService.device;
+
+    if (device != null) {
+      final state = await device.connectionState.first;
+
+      setState(() {
+        connectionState = state;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _connSub?.cancel();
+    _radarController.dispose();
+    super.dispose();
+  }
+
+  // =====================================================
+  // SCAN
+  // =====================================================
+
+  Future<void> _startScanning() async {
+
+    // ❌ Prevent scan if already connected
+    if (connectionState == BluetoothConnectionState.connected) {
+      return;
+    }
+
+    setState(() {
+      isScanning = true;
+      scanResults.clear();
+    });
+
+    _radarController.repeat();
+
+    try {
+      final results = await bleService.scan();
+
+      setState(() {
+        scanResults = results;
+      });
+
+    } catch (e) {
+      print("Scan error: $e");
+    }
+
+    setState(() {
+      isScanning = false;
+    });
+
+    _radarController.stop();
+  }
+
+  // =====================================================
+  // CONNECT
+  // =====================================================
+
+  Future<void> _connectToDevice(BluetoothDevice device) async {
+    try {
+      await bleService.connect(device);
+    } catch (e) {
+      print("Connection error: $e");
+    }
+  }
+
+  // =====================================================
+  // DISCONNECT
+  // =====================================================
+
+  Future<void> _disconnect() async {
+    await bleService.disconnect();
+  }
+
+  // =====================================================
+  // UI
+  // =====================================================
 
   @override
   Widget build(BuildContext context) {
+    final connectedDevice = bleService.device;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -25,164 +146,156 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFF0F8FF), // Very light blue
-              Color(0xFFBFDFFF), // Slightly deeper blue
+              Color(0xFFF0F8FF),
+              Color(0xFFBFDFFF),
             ],
           ),
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+
                 const SizedBox(height: 20),
+
                 const Text(
                   'Connect Armband',
-                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
                   ),
                 ),
-                const SizedBox(height: 40),
-                // Scan Button
-                Center(
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFF89C4FF), Color(0xFF4A90E2)],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF4A90E2).withValues(alpha: 0.4),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        'SCAN',
-                        style: TextStyle(
-                          color: Colors.blue[900],
-                          fontWeight: FontWeight.w800,
-                          fontSize: 20,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40),
-                const Text(
-                  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 30),
 
-                // Connected Device Mock
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCDE5FF),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.blue.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Row(
+                const SizedBox(height: 40),
+
+                // Radar Button
+                GestureDetector(
+                  onTap: _startScanning,
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      const Text(
-                        'Device Name',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Color(0xFF1E3A8A),
+
+                      for (double size in [240, 160, 80])
+                        Container(
+                          width: size,
+                          height: size,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF4A90E2)
+                                  .withOpacity(0.2),
+                            ),
+                          ),
+                        ),
+
+                      if (isScanning)
+                        RotationTransition(
+                          turns: _radarController,
+                          child: CustomPaint(
+                            painter: RadarLinePainter(),
+                            size: const Size(240, 240),
+                          ),
+                        ),
+
+                      Container(
+                        width: 140,
+                        height: 140,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xFF89C4FF),
+                              Color(0xFF4A90E2),
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            isScanning ? 'SCANNING...' : 'SCAN',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
-                      const Spacer(),
-                      const Icon(
-                        Icons.check_circle,
-                        color: Color(0xFF689F38),
-                      ), // Green check
-                      const SizedBox(width: 15),
-                      const Icon(Icons.more_vert, color: Colors.black87),
                     ],
                   ),
                 ),
 
                 const SizedBox(height: 30),
-                const Text(
-                  'Other Devices',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 15),
 
-                // List of other devices
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCDE5FF).withValues(
-                        alpha: 0.5,
-                      ), // Lighter background for the list container
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: ListView.separated(
-                        padding: EdgeInsets.zero,
-                        itemCount: otherDevices.length,
-                        separatorBuilder: (context, index) => Divider(
-                          height: 1,
-                          color: Colors.black.withValues(alpha: 0.5),
+                // =====================================================
+                // CONNECTION STATUS (NOW PERSISTENT)
+                // =====================================================
+
+                if (connectionState == BluetoothConnectionState.connected &&
+                    connectedDevice != null)
+                  Column(
+                    children: [
+                      Text(
+                        "Connected: ${connectedDevice.platformName}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
                         ),
-                        itemBuilder: (context, index) {
-                          return Container(
-                            color: Colors.transparent,
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 4,
-                              ),
-                              title: Text(
-                                otherDevices[index]['name'],
-                                style: const TextStyle(
-                                  color: Color(0xFF1E3A8A),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              trailing: const Icon(
-                                Icons.add_circle,
-                                color: Color(0xFF689F38),
-                              ), // Green plus
-                            ),
-                          );
-                        },
                       ),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        onPressed: _disconnect,
+                        icon: const Icon(Icons.logout),
+                        label: const Text("Disconnect"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                      ),
+                    ],
+                  )
+                else if (connectionState ==
+                    BluetoothConnectionState.connecting)
+                  const Text(
+                    "Connecting...",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
+                    ),
+                  )
+                else
+                  const Text(
+                    "Not Connected",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black54,
                     ),
                   ),
-                ),
+
                 const SizedBox(height: 20),
+
+                // =====================================================
+                // SCAN RESULTS
+                // =====================================================
+
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: scanResults.length,
+                    itemBuilder: (context, index) {
+                      final result = scanResults[index];
+                      final device = result.device;
+
+                      return ListTile(
+                        title: Text(
+                          device.platformName.isEmpty
+                              ? device.remoteId.str
+                              : device.platformName,
+                        ),
+                        subtitle: Text("RSSI: ${result.rssi}"),
+                        trailing: const Icon(Icons.bluetooth),
+                        onTap: () => _connectToDevice(device),
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -190,4 +303,25 @@ class _BLEDeviceScreenState extends State<BLEDeviceScreen> {
       ),
     );
   }
+}
+
+class RadarLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final paint = Paint()
+      ..color = const Color(0xFF4A90E2).withOpacity(0.6)
+      ..strokeWidth = 2;
+
+    final radius = size.width / 2;
+
+    canvas.drawLine(
+      center,
+      Offset(center.dx + radius * 0.9, center.dy),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }

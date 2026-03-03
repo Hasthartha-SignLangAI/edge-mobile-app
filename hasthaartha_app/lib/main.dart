@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hasthaartha_app/services/ble_pipeline_service.dart';
 import 'package:hasthaartha_app/services/onnx_servce.dart';
+import 'package:hasthaartha_app/services/realtime_engine.dart';
 
 import 'firebase_options.dart';
 import 'localdb/isar_db.dart';
 import 'screens/splash/logoscreen.dart';
 
 final onnxServiceProvider = Provider<OnnxService>((ref) {
-  return OnnxService();
+  throw UnimplementedError("OnnxService must be overridden in main()");
+});
+
+final realtimeEngineProvider = Provider<RealtimeGestureEngine>((ref) {
+  final onnx = ref.read(onnxServiceProvider);
+  return RealtimeGestureEngine(onnx);
+});
+
+final blePipelineProvider = Provider<BlePipelineService>((ref) {
+  final onnx = ref.read(onnxServiceProvider);
+  final engine = ref.read(realtimeEngineProvider);
+
+  return BlePipelineService(
+    onnx: onnx,
+    engine: engine,
+  );
 });
 
 Future<void> main() async {
