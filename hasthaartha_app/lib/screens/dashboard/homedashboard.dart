@@ -7,8 +7,8 @@ import 'package:hasthaartha_app/screens/auth/login.dart';
 import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
 import 'package:hasthaartha_app/screens/settings/profile.dart';
+import 'package:hasthaartha_app/screens/settings/about.dart';
 import 'package:hasthaartha_app/screens/translation/realtime_translation_screen.dart';
-import 'package:hasthaartha_app/screens/translation/sensor_monitor_screen.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
 import 'package:hasthaartha_app/screens/history/history.dart';
 import 'package:hasthaartha_app/main.dart';
@@ -237,7 +237,7 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const SensorMonitorScreen(),
+                              builder: (_) => const AboutScreen(),
                             ),
                           );
                         },
