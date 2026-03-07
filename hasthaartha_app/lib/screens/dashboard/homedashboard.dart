@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:hasthaartha_app/screens/auth/login.dart';
-import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
+
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
 import 'package:hasthaartha_app/screens/gestures/add_custom_gesture_screen.dart';
 import 'package:hasthaartha_app/screens/gestures/manage_custom_gesture_screen.dart';
@@ -190,14 +190,14 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildMenuCard(
-                        title: 'Gestures',
-                        icon: Icons.back_hand_rounded,
+                        title: 'Add Gesture',
+                        icon: Icons.add_circle_outline_rounded,
                         iconColor: const Color(0xFF00897B),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const MyGestureListPage(),
+                              builder: (_) => const AddCustomGestureScreen(),
                             ),
                           );
                         },
@@ -210,6 +210,22 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
 
                 Row(
                   children: [
+                    Expanded(
+                      child: _buildMenuCard(
+                        title: 'Manage Gestures',
+                        icon: Icons.back_hand_rounded,
+                        iconColor: const Color(0xFF8E24AA),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ManageCustomGestureScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: _buildMenuCard(
                         title: 'Settings',
@@ -229,23 +245,22 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                         },
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildMenuCard(
-                        title: 'About',
-                        icon: Icons.info_rounded,
-                        iconColor: const Color(0xFFFF6F00),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AboutScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
                   ],
+                ),
+
+                const SizedBox(height: 16),
+
+                _buildMenuCard(
+                  title: 'About',
+                  icon: Icons.info_rounded,
+                  iconColor: const Color(0xFFFF6F00),
+                  isFullWidth: true,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutScreen()),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 20),

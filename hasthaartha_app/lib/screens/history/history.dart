@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hasthaartha_app/localdb/repo/local_repo.dart';
 import 'package:hasthaartha_app/localdb/models/history_record.dart';
 
@@ -34,16 +35,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Clear history?"),
-        content: const Text("This will delete all saved gesture records."),
+        title: Text(
+          "Clear history?",
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          "This will delete all saved gesture records.",
+          style: GoogleFonts.inter(),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+            child: Text("Cancel", style: GoogleFonts.inter()),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Clear"),
+            child: Text("Clear", style: GoogleFonts.inter()),
           ),
         ],
       ),
@@ -66,38 +73,70 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("History"),
+        title: Text(
+          "History",
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF0D47A1),
+            letterSpacing: -0.5,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF0D47A1)),
         actions: [
           IconButton(
             onPressed: _items.isEmpty ? null : _clear,
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(Icons.delete_outline_rounded),
+            color: const Color(0xFFE53935),
             tooltip: "Clear history",
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _items.isEmpty
-          ? const _EmptyState()
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: _items.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 10),
-                itemBuilder: (context, i) {
-                  final item = _items[i];
-                  return _HistoryCard(
-                    label: item.gestureLabel,
-                    sinhala: item.sinhalaText,
-                    confidence: item.confidence,
-                    timeText: _timeText(item.createdAt),
-                  );
-                },
-              ),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF0F7FF), Color(0xFFDEEDFF), Color(0xFFC7E2FF)],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _items.isEmpty
+              ? const _EmptyState()
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  color: const Color(0xFF1976D2),
+                  backgroundColor: Colors.white,
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 16.0,
+                    ),
+                    itemCount: _items.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 16),
+                    itemBuilder: (context, i) {
+                      final item = _items[i];
+                      return _HistoryCard(
+                        label: item.gestureLabel,
+                        sinhala: item.sinhalaText,
+                        confidence: item.confidence,
+                        timeText: _timeText(item.createdAt),
+                      );
+                    },
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }
@@ -121,18 +160,27 @@ class _HistoryCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: const Color(0xFF1976D2).withValues(alpha: 0.05),
+            blurRadius: 15,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -141,48 +189,63 @@ class _HistoryCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1A1A1A),
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1A1A1A),
                     ),
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
+                    horizontal: 12,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(999),
-                    color: const Color(0xFFD6E4FF),
+                    color: const Color(0xFFE3F2FD),
+                    border: Border.all(
+                      color: const Color(0xFF90CAF9).withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Text(
                     "$confPct%",
-                    style: const TextStyle(
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF1A3B8C),
+                      color: const Color(0xFF1976D2),
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
               sinhala,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A3B8C),
+              style: GoogleFonts.inter(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0D47A1),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              timeText,
-              style: TextStyle(
-                color: Colors.black.withValues(alpha: 0.55),
-                fontSize: 12,
-              ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time_rounded,
+                  size: 14,
+                  color: Colors.black.withValues(alpha: 0.5),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  timeText,
+                  style: GoogleFonts.inter(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -198,25 +261,51 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.history,
-              size: 52,
-              color: Colors.black.withValues(alpha: 0.35),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.history_rounded,
+                size: 64,
+                color: Color(0xFF1976D2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              "No history yet",
+              style: GoogleFonts.inter(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0D47A1),
+              ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              "No history yet",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 6),
             Text(
               "Start translating to see saved gestures here.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black.withValues(alpha: 0.6)),
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.black.withValues(alpha: 0.6),
+                height: 1.5,
+              ),
             ),
           ],
         ),
