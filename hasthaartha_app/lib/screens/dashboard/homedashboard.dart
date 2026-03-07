@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hasthaartha_app/screens/auth/login.dart';
 import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
+import 'package:hasthaartha_app/screens/gestures/add_custom_gesture_screen.dart';
+import 'package:hasthaartha_app/screens/gestures/manage_custom_gesture_screen.dart';
 import 'package:hasthaartha_app/screens/settings/profile.dart';
 import 'package:hasthaartha_app/screens/settings/about.dart';
 import 'package:hasthaartha_app/screens/translation/realtime_translation_screen.dart';

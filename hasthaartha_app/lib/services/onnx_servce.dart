@@ -32,7 +32,7 @@ class OnnxService {
 
   late int _idleIndex;
 
-  // Web thresholds
+  // thresholds from web system
   final double BASE_CONF_TH = 0.80;
   final double IDLE_GATE_TH = 0.60;
   final double FEWSHOT_SIM_TH = 0.78;
@@ -41,6 +41,12 @@ class OnnxService {
   String getLabel(int index) {
     return _labelMap[index] ?? "Unknown";
   }
+
+  Map<String, List<double>> getBuiltInPrototypes() {
+    return _prototypes;
+  }
+
+  // ================= INIT =================
 
   Future<void> init() async {
     _env = OrtEnv.instance;
@@ -123,18 +129,18 @@ class OnnxService {
     }).toList();
   }
 
-  Float32List _prepareInput(List<List<double>> input) {
+  Float32List prepareInput(List<List<double>> input) {
     final dc = _dcRemove(input);
     final norm = _normalize(dc);
     return Float32List.fromList(norm.expand((e) => e).toList());
   }
 
-  // ================= BASE PREDICT =================
+  // ================= BASE MODEL =================
 
   Future<Map<String, dynamic>> basePredict(
       List<List<double>> inputData) async {
     final tensor = OrtValueTensor.createTensorWithDataList(
-        _prepareInput(inputData), [1, 512, 9]);
+        prepareInput(inputData), [1, 512, 9]);
 
     final outputs = await _classifierSession.runAsync(
         OrtRunOptions(),
@@ -161,14 +167,14 @@ class OnnxService {
     };
   }
 
-  // ================= FEW SHOT =================
+  // ================= ENCODER =================
+  // Used for FEW-SHOT + ENROLLMENT
 
-  Future<Map<String, dynamic>?> fewShotPredict(
+  Future<List<double>> encodeWindow(
       List<List<double>> inputData) async {
-    if (_prototypes.isEmpty) return null;
 
     final tensor = OrtValueTensor.createTensorWithDataList(
-        _prepareInput(inputData), [1, 512, 9]);
+        prepareInput(inputData), [1, 512, 9]);
 
     final outputs = await _encoderSession.runAsync(
         OrtRunOptions(),
@@ -179,17 +185,41 @@ class OnnxService {
             .first
             .cast<double>();
 
-    // Normalize embedding
+    return normalizeEmbedding(embedding);
+  }
+
+  List<double> normalizeEmbedding(List<double> embedding) {
     double norm =
         sqrt(embedding.fold(0, (a, b) => a + b * b));
-    embedding =
-        embedding.map((e) => e / (norm + 1e-8)).toList();
+
+    return embedding
+        .map((e) => e / (norm + 1e-8))
+        .toList();
+  }
+
+  // ================= FEW SHOT =================
+
+  Future<Map<String, dynamic>?> fewShotPredict(
+      List<List<double>> inputData,
+      {Map<String, List<double>>? customPrototypes}) async {
+
+    if (_prototypes.isEmpty && customPrototypes == null) return null;
+
+    final embedding = await encodeWindow(inputData);
+
+    Map<String, List<double>> allProtos = {};
+
+    allProtos.addAll(_prototypes);
+
+    if (customPrototypes != null) {
+      allProtos.addAll(customPrototypes);
+    }
 
     String? bestLabel;
     double bestSim = -1;
     double secondSim = -1;
 
-    _prototypes.forEach((label, proto) {
+    allProtos.forEach((label, proto) {
       double sim = _cosine(embedding, proto);
 
       if (sim > bestSim) {
@@ -215,8 +245,10 @@ class OnnxService {
     for (int i = 0; i < a.length; i++) {
       dot += a[i] * b[i];
     }
-    return dot; // embeddings are normalized
+    return dot;
   }
+
+  // ================= TXT LOADER (DEBUG) =================
 
   Future<List<List<double>>> loadTxtFrames(String path) async {
     final text = await rootBundle.loadString(path);

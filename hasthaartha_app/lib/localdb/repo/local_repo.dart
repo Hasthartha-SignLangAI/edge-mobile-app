@@ -12,29 +12,34 @@ class LocalRepo {
     return FirebaseAuth.instance.currentUser?.uid ?? "anonymous";
   }
 
-  // SETTINGS
+  // ================= SETTINGS =================
+
   Future<UserSettings> getSettings() async {
     final uid = _currentUid();
 
-    // If your UserSettings model doesn't have `userId`, keep using ID=1
-    // But for multi-user, it's better to add `userId` to settings as well.
-    final s = await _db.userSettings.filter().userIdEqualTo(uid).findFirst();
+    final s = await _db.userSettings
+        .filter()
+        .userIdEqualTo(uid)
+        .findFirst();
+
     if (s != null) return s;
 
     final fresh = UserSettings()
-      ..userId = uid; // requires userId field in UserSettings model
+      ..userId = uid;
 
     await _db.writeTxn(() async => _db.userSettings.put(fresh));
     return fresh;
   }
 
   Future<void> updateSettings(UserSettings settings) async {
-    // ensure userId is always set (multi-user safety)
-    settings.userId = settings.userId.isNotEmpty ? settings.userId : _currentUid();
+    settings.userId =
+        settings.userId.isNotEmpty ? settings.userId : _currentUid();
+
     await _db.writeTxn(() async => _db.userSettings.put(settings));
   }
 
-  // HISTORY
+  // ================= HISTORY =================
+
   Future<void> addHistory({
     required String gestureLabel,
     required String sinhalaText,
@@ -77,31 +82,84 @@ class LocalRepo {
           .idProperty()
           .findAll();
 
-          if (ids.isNotEmpty) {
-            await _db.historyRecords.deleteAll(ids);
-          }
+      if (ids.isNotEmpty) {
+        await _db.historyRecords.deleteAll(ids);
+      }
     });
   }
 
-  // CUSTOM GESTURES
+  // ================= CUSTOM GESTURES =================
+
+  /// Create empty gesture entry before enrollment
   Future<CustomGesture> createCustomGesture({
-    required String name,
-    required String samplesDir,
+    required String label,
   }) async {
     final uid = _currentUid();
 
     final g = CustomGesture()
       ..userId = uid
-      ..name = name
+      ..label = label
       ..createdAt = DateTime.now()
-      ..samplesDir = samplesDir
       ..sampleCount = 0
-      ..isTrained = false;
+      ..prototype = [];
 
     await _db.writeTxn(() async => _db.customGestures.put(g));
     return g;
   }
 
+  /// Save trained prototype after enrollment
+  Future<void> saveGesturePrototype({
+    required String label,
+    required List<double> prototype,
+    required int sampleCount,
+  }) async {
+    final uid = _currentUid();
+
+    CustomGesture? existing = await _db.customGestures
+        .filter()
+        .userIdEqualTo(uid)
+        .labelEqualTo(label)
+        .findFirst();
+
+    if (existing != null) {
+      existing.prototype = prototype;
+      existing.sampleCount = sampleCount;
+      existing.createdAt = DateTime.now();
+
+      await _db.writeTxn(() async => _db.customGestures.put(existing));
+    } else {
+      final g = CustomGesture()
+        ..userId = uid
+        ..label = label
+        ..prototype = prototype
+        ..sampleCount = sampleCount
+        ..createdAt = DateTime.now();
+
+      await _db.writeTxn(() async => _db.customGestures.put(g));
+    }
+  }
+
+  /// Load prototypes for inference
+  Future<Map<String, List<double>>> loadCustomPrototypes() async {
+    final uid = _currentUid();
+
+    final gestures = await _db.customGestures
+        .filter()
+        .userIdEqualTo(uid)
+        .findAll();
+
+    final map = <String, List<double>>{};
+
+    for (var g in gestures) {
+      if (g.prototype.isNotEmpty) {
+        map[g.label] = g.prototype;
+      }
+    }
+
+    return map;
+  }
+
+  /// List gestures (for UI)
   Future<List<CustomGesture>> listCustomGestures() async {
     final uid = _currentUid();
 
@@ -112,12 +170,23 @@ class LocalRepo {
         .findAll();
   }
 
-  Future<void> updateCustomGesture(CustomGesture g) async {
-    g.userId = g.userId.isNotEmpty ? g.userId : _currentUid();
-    await _db.writeTxn(() async => _db.customGestures.put(g));
-  }
-
+  /// Delete gesture
   Future<void> deleteCustomGesture(Id id) async {
     await _db.writeTxn(() async => _db.customGestures.delete(id));
+  }
+
+  /// Delete by label
+  Future<void> deleteGestureByLabel(String label) async {
+    final uid = _currentUid();
+
+    final g = await _db.customGestures
+        .filter()
+        .userIdEqualTo(uid)
+        .labelEqualTo(label)
+        .findFirst();
+
+    if (g != null) {
+      await _db.writeTxn(() async => _db.customGestures.delete(g.id));
+    }
   }
 }
