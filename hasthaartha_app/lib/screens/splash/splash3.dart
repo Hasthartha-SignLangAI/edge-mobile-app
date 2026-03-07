@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:hasthaartha_app/services/auth_gate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Splash3 extends StatelessWidget {
   const Splash3({super.key});
 
-  void _goNext(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const AuthGate()),
-    );
+  void _goNext(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenSplash', true);
+
+    if (context.mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+      );
+    }
   }
 
   @override

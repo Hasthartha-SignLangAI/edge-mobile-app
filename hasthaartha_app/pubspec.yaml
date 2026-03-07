@@ -50,6 +50,7 @@ dependencies:
   flutter_blue_plus: ^1.32.7
   permission_handler: ^11.3.1
   flutter_tts: ^3.8.5
+  shared_preferences: ^2.5.4
 
 
 dev_dependencies:
