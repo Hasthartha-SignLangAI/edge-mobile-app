@@ -68,6 +68,54 @@ class AuthService {
     }
   }
 
+  // Update User Profile (Name)
+  Future<void> updateUserProfile(String newName) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(newName);
+        await user.reload();
+      } else {
+        throw Exception("No user is currently signed in.");
+      }
+    } catch (e) {
+      print('❌ AUTH ERROR (Update Profile): $e');
+      rethrow;
+    }
+  }
+
+  // Change Password
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null && user.email != null) {
+        // Re-authenticate first
+        final cred = EmailAuthProvider.credential(
+          email: user.email!,
+          password: currentPassword,
+        );
+        await user.reauthenticateWithCredential(cred);
+
+        // Then update password
+        await user.updatePassword(newPassword);
+      } else {
+        throw Exception("No user is currently signed in.");
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        throw Exception('The current password provided is incorrect.');
+      }
+      print('❌ AUTH ERROR (Change Password): ${e.code}');
+      rethrow;
+    } catch (e) {
+      print('❌ AUTH UNEXPECTED ERROR: $e');
+      throw Exception(e.toString());
+    }
+  }
+
   // Sign Out (after this, user cannot sign-in offline)
   Future<void> signOut() async {
     await _auth.signOut();

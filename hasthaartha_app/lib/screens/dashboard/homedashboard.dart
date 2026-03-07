@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:hasthaartha_app/screens/auth/login.dart';
 import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
+import 'package:hasthaartha_app/screens/settings/profile.dart';
+import 'package:hasthaartha_app/screens/settings/about.dart';
 import 'package:hasthaartha_app/screens/translation/realtime_translation_screen.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
 import 'package:hasthaartha_app/screens/history/history.dart';
-import 'package:hasthaartha_app/main.dart'; // for onnxServiceProvider
+import 'package:hasthaartha_app/main.dart';
+import 'package:hasthaartha_app/services/ble_pipeline_service.dart';
+import 'package:hasthaartha_app/services/onnx_servce.dart';
+import 'package:hasthaartha_app/services/realtime_engine.dart'; // for onnxServiceProvider
 
 class HomeDashboard extends ConsumerStatefulWidget {
   final String userName;
@@ -22,13 +28,20 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
     with SingleTickerProviderStateMixin {
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
-  bool _isConnected = true;
+
+  //bool _isConnected = true;
   String _pressedCard = '';
+
+  //late final BlePipelineService bleService;
 
   @override
   void initState() {
     super.initState();
 
+    //   bleService = BlePipelineService(
+    //   onnx: OnnxService(),
+    //   engine: RealtimeGestureEngine(),
+    // );
     //   Future.microtask(() async {
     //   final onnx = ref.read(onnxServiceProvider);
 
@@ -54,7 +67,7 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
       int start = (frames.length - 512) ~/ 2;
       final window = frames.sublist(start, start + 512);
 
-      final word = await onnx.predictWord(window);
+      final word = await onnx.basePredict(window);
 
       print("🔥 REAL TXT PREDICTION: $word");
     });
@@ -77,6 +90,9 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
 
   @override
   Widget build(BuildContext context) {
+    final bleService = ref.watch(blePipelineProvider);
+    final isConnected = bleService.device != null;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Container(
@@ -123,13 +139,13 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                         ),
                       ],
                     ),
-                    _buildLogoutButton(),
+                    _buildProfileMenuButton(),
                   ],
                 ),
 
                 const SizedBox(height: 25),
 
-                _buildConnectionStatus(),
+                _buildConnectionStatus(bleService),
 
                 const SizedBox(height: 30),
 
@@ -194,18 +210,18 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                   children: [
                     Expanded(
                       child: _buildMenuCard(
-                        title: 'Profile',
-                        icon: Icons.person_rounded,
-                        iconColor: const Color(0xFF8E24AA),
+                        title: 'Settings',
+                        icon: Icons.settings_rounded,
+                        iconColor: const Color(0xFF607D8B),
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: const Text("Profile coming soon!"),
+                              content: const Text("Settings coming soon!"),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              backgroundColor: const Color(0xFF8E24AA),
+                              backgroundColor: const Color(0xFF607D8B),
                             ),
                           );
                         },
@@ -218,41 +234,16 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                         icon: Icons.info_rounded,
                         iconColor: const Color(0xFFFF6F00),
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text("About page coming soon!"),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              backgroundColor: const Color(0xFFFF6F00),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AboutScreen(),
                             ),
                           );
                         },
                       ),
                     ),
                   ],
-                ),
-
-                const SizedBox(height: 16),
-
-                _buildMenuCard(
-                  title: 'Settings',
-                  icon: Icons.settings_rounded,
-                  iconColor: const Color(0xFF607D8B),
-                  isFullWidth: true,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text("Settings coming soon!"),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        backgroundColor: const Color(0xFF607D8B),
-                      ),
-                    );
-                  },
                 ),
 
                 const SizedBox(height: 20),
@@ -268,7 +259,7 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
   // BELOW THIS IS 100% YOUR UI
   // ===============================
 
-  Widget _buildLogoutButton() {
+  Widget _buildProfileMenuButton() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -281,110 +272,171 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
           ),
         ],
       ),
-      child: IconButton(
-        onPressed: () async {
-          final navigator = Navigator.of(context);
-          await AuthService().signOut();
-          if (mounted) {
-            navigator.pushReplacement(
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.person_rounded, color: Color(0xFF1976D2)),
+        tooltip: 'Profile Menu',
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: Colors.white.withValues(alpha: 0.95),
+        elevation: 8,
+        offset: const Offset(0, 50),
+        onSelected: (value) async {
+          if (value == 'profile') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
             );
+          } else if (value == 'logout') {
+            final navigator = Navigator.of(context);
+            await AuthService().signOut();
+            if (mounted) {
+              navigator.pushReplacement(
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            }
           }
         },
-        icon: const Icon(Icons.logout_rounded, color: Color(0xFFFF5252)),
-        tooltip: 'Logout',
-      ),
-    );
-  }
-
-  Widget _buildConnectionStatus() {
-    final statusColor = _isConnected ? Colors.green : Colors.orange;
-    final statusBgColor = _isConnected
-        ? const Color(0xFFE8F5E9)
-        : const Color(0xFFFFF3E0);
-    final statusText = _isConnected ? 'Device Connected' : 'Not Connected';
-    final statusIcon = _isConnected
-        ? Icons.bluetooth_connected_rounded
-        : Icons.bluetooth_disabled_rounded;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const BLEDeviceScreen()),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.9),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-            BoxShadow(
-              color: statusColor.withValues(alpha: 0.15),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: statusBgColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: statusColor.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(statusIcon, color: statusColor, size: 22),
-            ),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+          PopupMenuItem<String>(
+            value: 'profile',
+            child: Row(
               children: [
-                Text(
-                  'Status',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.w600,
-                  ),
+                const Icon(
+                  Icons.person_outline_rounded,
+                  color: Color(0xFF1976D2),
+                  size: 20,
                 ),
+                const SizedBox(width: 12),
                 Text(
-                  statusText,
+                  'Profile Page',
                   style: GoogleFonts.inter(
-                    fontSize: 16,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF1A1A1A),
                   ),
                 ),
               ],
             ),
-            const Spacer(),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 16,
-              color: Colors.black26,
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: 'logout',
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.logout_rounded,
+                  color: Color(0xFFFF5252),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Logout',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFFFF5252),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildConnectionStatus(BlePipelineService bleService) {
+    return StreamBuilder<BluetoothConnectionState>(
+      stream: bleService.connectionStream,
+      builder: (context, snapshot) {
+        final state = snapshot.data;
+
+        final isConnected =
+            bleService.device != null &&
+            state == BluetoothConnectionState.connected;
+
+        final statusColor = isConnected ? Colors.green : Colors.orange;
+
+        final statusBgColor = isConnected
+            ? const Color(0xFFE8F5E9)
+            : const Color(0xFFFFF3E0);
+
+        final statusText = isConnected ? 'Device Connected' : 'Not Connected';
+
+        final statusIcon = isConnected
+            ? Icons.bluetooth_connected_rounded
+            : Icons.bluetooth_disabled_rounded;
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BLEDeviceScreen()),
+            );
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.9),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: statusColor.withValues(alpha: 0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: statusBgColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(statusIcon, color: statusColor, size: 22),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Status',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      statusText,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: Colors.black26,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -488,18 +540,24 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 70,
+        height: 76,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2962FF), Color(0xFF448AFF)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
+          border: Border.all(
+            color: const Color(0xFF1976D2).withValues(alpha: 0.2),
+            width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2962FF).withValues(alpha: 0.4),
-              blurRadius: 16,
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+            BoxShadow(
+              color: const Color(0xFF1976D2).withValues(alpha: 0.15),
+              blurRadius: 20,
               offset: const Offset(0, 8),
             ),
           ],
@@ -507,14 +565,14 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(width: 12),
+            Icon(icon, color: const Color(0xFF1976D2), size: 32),
+            const SizedBox(width: 16),
             Text(
               title,
               style: GoogleFonts.inter(
-                color: Colors.white,
+                color: const Color(0xFF1A1A1A),
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
               ),
             ),

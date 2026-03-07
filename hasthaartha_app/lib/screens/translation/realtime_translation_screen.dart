@@ -1,15 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hasthaartha_app/main.dart';
 import 'package:hasthaartha_app/models/gesture_data.dart';
 import 'package:hasthaartha_app/models/translation_state.dart';
+import 'package:hasthaartha_app/models/translation_state.dart' as app_state;
 import 'package:hasthaartha_app/providers/translation_providers.dart';
-import 'package:hasthaartha_app/services/gesture_inference_service.dart';
 import 'package:hasthaartha_app/services/speech_service.dart';
+import 'package:hasthaartha_app/widgets/debug_panel.dart';
 import 'package:hasthaartha_app/widgets/gesture_visualizer.dart';
 import 'package:hasthaartha_app/widgets/speech_waveform.dart';
-import 'package:hasthaartha_app/widgets/debug_panel.dart';
 
 /// Real-Time Translation Screen - Main screen of the app
 /// Provides low-latency gesture recognition with speech feedback
@@ -24,13 +27,14 @@ class RealtimeTranslationScreen extends ConsumerStatefulWidget {
 class _RealtimeTranslationScreenState
     extends ConsumerState<RealtimeTranslationScreen>
     with TickerProviderStateMixin {
-  late GestureInferenceService _inferenceService;
   late SpeechService _speechService;
   late AnimationController _buttonPulseController;
   late Animation<double> _buttonPulseAnimation;
 
   int _connectionIconTapCount = 0;
   DateTime? _lastConnectionTap;
+
+  StreamSubscription? _predSub;
 
   @override
   void initState() {
@@ -39,7 +43,6 @@ class _RealtimeTranslationScreenState
     // Lock to portrait mode
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-    _inferenceService = GestureInferenceService();
     _speechService = SpeechService();
 
     // Setup button pulse animation
@@ -52,21 +55,38 @@ class _RealtimeTranslationScreenState
       CurvedAnimation(parent: _buttonPulseController, curve: Curves.easeInOut),
     );
 
-    // Listen to gesture stream
-    _inferenceService.gestureStream.listen((gesture) {
+    // ✅ Listen to BLE prediction stream (from BlePipelineService)
+    final bleService = ref.read(blePipelineProvider);
+
+    _predSub = bleService.gestureStream.stream.listen((prediction) {
+      // Only update UI when translation is active
+      final isActive = ref.read(translationStateProvider).isActive;
+      if (!isActive) return;
+
+      // Convert PredictionResult -> GestureData
+      // NOTE: If you have a Sinhala mapping table, replace sinhalaText here.
+      final gesture = GestureData(
+        label: prediction.label,
+        sinhalaText: prediction.label,
+        confidence: prediction.confidence,
+        keypoints: _generateMockKeypoints(),
+        timestamp: DateTime.now(),
+      );
+
       ref.read(currentGestureProvider.notifier).updateGesture(gesture);
 
-      // Auto-play speech if high confidence
-      if (gesture.isHighConfidence) {
+      // Auto speech on high confidence
+      if (prediction.confidence >= 0.80) {
         final volume = ref.read(volumeProvider);
         _speechService.speak(gesture.sinhalaText, volume);
-        _speechService.provideHapticFeedback(gesture.confidence);
+        _speechService.provideHapticFeedback(prediction.confidence);
       }
     });
   }
 
   @override
   void dispose() {
+    // restore orientations
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -74,8 +94,8 @@ class _RealtimeTranslationScreenState
       DeviceOrientation.landscapeRight,
     ]);
 
+    _predSub?.cancel();
     _buttonPulseController.dispose();
-    _inferenceService.dispose();
     _speechService.dispose();
     super.dispose();
   }
@@ -106,13 +126,11 @@ class _RealtimeTranslationScreenState
     if (state.isActive) {
       // Stop translation
       ref.read(translationStateProvider.notifier).stopTranslation();
-      _inferenceService.stopInference();
       _speechService.stop();
       ref.read(currentGestureProvider.notifier).clear();
     } else {
       // Start translation
       ref.read(translationStateProvider.notifier).startTranslation();
-      _inferenceService.startInference();
       HapticFeedback.mediumImpact();
     }
   }
@@ -120,9 +138,16 @@ class _RealtimeTranslationScreenState
   @override
   Widget build(BuildContext context) {
     final translationState = ref.watch(translationStateProvider);
-    final bleConnection = ref.watch(bleConnectionProvider);
     final currentGesture = ref.watch(currentGestureProvider);
     final volume = ref.watch(volumeProvider);
+
+    // ✅ Connection state from BlePipelineService stream
+    final connAsync = ref.watch(bleConnectionProvider);
+    final isConnected = connAsync.when(
+      data: (s) => s.isConnected,
+      loading: () => false,
+      error: (_, __) => false,
+    );
 
     return Scaffold(
       body: Container(
@@ -141,7 +166,9 @@ class _RealtimeTranslationScreenState
           child: Column(
             children: [
               // Header with connection status and settings
-              _buildHeader(bleConnection),
+              _buildHeader(
+                app_state.BLEConnectionState(isConnected: isConnected),
+              ),
 
               // Main content area
               Expanded(
@@ -198,7 +225,7 @@ class _RealtimeTranslationScreenState
     );
   }
 
-  Widget _buildHeader(BLEConnectionState bleConnection) {
+  Widget _buildHeader(app_state.BLEConnectionState bleConnection) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -304,9 +331,7 @@ class _RealtimeTranslationScreenState
             const SizedBox(height: 12),
             // Sinhala text (large, high contrast)
             Text(
-              gesture.sinhalaText.isEmpty
-                  ? 'අත් ඉඟි පරිවර්තනය'
-                  : gesture.sinhalaText,
+              gesture.sinhalaText.isEmpty ? 'අත් ඉඟි පරිවර්තනය' : gesture.sinhalaText,
               style: GoogleFonts.notoSansSinhala(
                 color: Colors.white,
                 fontSize: 48,
@@ -405,11 +430,10 @@ class _RealtimeTranslationScreenState
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color:
-                        (isActive
-                                ? const Color(0xFFF44336)
-                                : const Color(0xFF4CAF50))
-                            .withValues(alpha: 0.4),
+                    color: (isActive
+                            ? const Color(0xFFF44336)
+                            : const Color(0xFF4CAF50))
+                        .withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -485,5 +509,18 @@ class _RealtimeTranslationScreenState
 
   List<double> _generateMockIMUData() {
     return List.generate(50, (i) => (i % 8 - 4) / 8);
+  }
+
+  List<HandKeypoint> _generateMockKeypoints() {
+  // Generates stable dummy hand skeleton so visualizer doesn't break
+    return List.generate(
+      21,
+      (i) => HandKeypoint(
+        x: 0.5 + (i % 5) * 0.02,
+        y: 0.5 + (i ~/ 5) * 0.02,
+        confidence: 1.0,
+        z: 0.0,
+      ),
+    );
   }
 }
