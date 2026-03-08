@@ -58,7 +58,26 @@ class LocalRepo {
       ..deviceId = deviceId
       ..probsJson = probsJson;
 
-    await _db.writeTxn(() async => _db.historyRecords.put(rec));
+    await _db.writeTxn(() async {
+
+    // 1️⃣ Save new record
+    await _db.historyRecords.put(rec);
+
+    // 2️⃣ Cleanup old records
+    final count = await _db.historyRecords.count();
+
+    if (count > 200) {
+
+      final old = await _db.historyRecords
+          .where()
+          .sortByCreatedAt()
+          .limit(50)
+          .findAll();
+
+      await _db.historyRecords.deleteAll(
+          old.map((e) => e.id).toList());
+    }
+  });
   }
 
   Future<List<HistoryRecord>> latestHistory({int limit = 50}) async {

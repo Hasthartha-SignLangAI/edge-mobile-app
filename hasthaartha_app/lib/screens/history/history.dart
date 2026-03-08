@@ -90,7 +90,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 itemBuilder: (context, i) {
                   final item = _items[i];
                   return _HistoryCard(
-                    label: item.gestureLabel,
                     sinhala: item.sinhalaText,
                     confidence: item.confidence,
                     timeText: _timeText(item.createdAt),
@@ -103,13 +102,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 class _HistoryCard extends StatelessWidget {
-  final String label;
   final String sinhala;
   final double confidence;
   final String timeText;
 
   const _HistoryCard({
-    required this.label,
     required this.sinhala,
     required this.confidence,
     required this.timeText,
@@ -140,11 +137,11 @@ class _HistoryCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1A1A1A),
+
+                    "Confidence",
+                    style: TextStyle(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      fontSize: 12,
                     ),
                   ),
                 ),

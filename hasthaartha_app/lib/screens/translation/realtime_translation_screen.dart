@@ -8,8 +8,10 @@ import 'package:hasthaartha_app/main.dart';
 import 'package:hasthaartha_app/models/gesture_data.dart';
 import 'package:hasthaartha_app/models/translation_state.dart';
 import 'package:hasthaartha_app/models/translation_state.dart' as app_state;
+import 'package:hasthaartha_app/providers/local_repo_provider.dart';
 import 'package:hasthaartha_app/providers/translation_providers.dart';
 import 'package:hasthaartha_app/services/speech_service.dart';
+import 'package:hasthaartha_app/utils/sinhala_mapper.dart';
 import 'package:hasthaartha_app/widgets/debug_panel.dart';
 
 import 'package:hasthaartha_app/widgets/speech_waveform.dart';
@@ -58,16 +60,26 @@ class _RealtimeTranslationScreenState
     // ✅ Listen to BLE prediction stream (from BlePipelineService)
     final bleService = ref.read(blePipelineProvider);
 
-    _predSub = bleService.gestureStream.stream.listen((prediction) {
+    _predSub = bleService.gestureStream.stream.listen((prediction) async {
       // Only update UI when translation is active
       final isActive = ref.read(translationStateProvider).isActive;
       if (!isActive) return;
+
+      final sinhalaWord = SinhalaMapper.toSinhala(prediction.label);
+
+      final repo = ref.read(localRepoProvider);
+
+      await repo.addHistory(
+        gestureLabel: prediction.label,
+        sinhalaText: sinhalaWord,
+        confidence: prediction.confidence,
+      );
 
       // Convert PredictionResult -> GestureData
       // NOTE: If you have a Sinhala mapping table, replace sinhalaText here.
       final gesture = GestureData(
         label: prediction.label,
-        sinhalaText: prediction.label,
+        sinhalaText: sinhalaWord,
         confidence: prediction.confidence,
         keypoints: const [],
         timestamp: DateTime.now(),
