@@ -96,9 +96,21 @@ class LocalRepo {
   }) async {
     final uid = _currentUid();
 
+    final cleanLabel = label.trim().toLowerCase();
+
+    CustomGesture? existing = await _db.customGestures
+        .filter()
+        .userIdEqualTo(uid)
+        .labelEqualTo(cleanLabel)
+        .findFirst();
+
+    if (existing != null) {
+      return existing;
+    }
+
     final g = CustomGesture()
       ..userId = uid
-      ..label = label
+      ..label = cleanLabel
       ..createdAt = DateTime.now()
       ..sampleCount = 0
       ..prototype = [];
@@ -114,11 +126,12 @@ class LocalRepo {
     required int sampleCount,
   }) async {
     final uid = _currentUid();
+    final cleanLabel = label.trim().toLowerCase();
 
     CustomGesture? existing = await _db.customGestures
         .filter()
         .userIdEqualTo(uid)
-        .labelEqualTo(label)
+        .labelEqualTo(cleanLabel)
         .findFirst();
 
     if (existing != null) {
@@ -130,7 +143,7 @@ class LocalRepo {
     } else {
       final g = CustomGesture()
         ..userId = uid
-        ..label = label
+        ..label = cleanLabel
         ..prototype = prototype
         ..sampleCount = sampleCount
         ..createdAt = DateTime.now();
@@ -139,7 +152,7 @@ class LocalRepo {
     }
   }
 
-  /// Load prototypes for inference
+  /// Load prototypes for inference (used by OnnxService)
   Future<Map<String, List<double>>> loadCustomPrototypes() async {
     final uid = _currentUid();
 
@@ -152,7 +165,7 @@ class LocalRepo {
 
     for (var g in gestures) {
       if (g.prototype.isNotEmpty) {
-        map[g.label] = g.prototype;
+        map[g.label] = List<double>.from(g.prototype);
       }
     }
 
@@ -170,23 +183,41 @@ class LocalRepo {
         .findAll();
   }
 
-  /// Delete gesture
+  /// Delete gesture by id
   Future<void> deleteCustomGesture(Id id) async {
     await _db.writeTxn(() async => _db.customGestures.delete(id));
   }
 
-  /// Delete by label
+  /// Delete gesture by label
   Future<void> deleteGestureByLabel(String label) async {
     final uid = _currentUid();
+    final cleanLabel = label.trim().toLowerCase();
 
     final g = await _db.customGestures
         .filter()
         .userIdEqualTo(uid)
-        .labelEqualTo(label)
+        .labelEqualTo(cleanLabel)
         .findFirst();
 
     if (g != null) {
       await _db.writeTxn(() async => _db.customGestures.delete(g.id));
     }
+  }
+
+  /// Clear all user gestures
+  Future<void> clearAllGestures() async {
+    final uid = _currentUid();
+
+    await _db.writeTxn(() async {
+      final ids = await _db.customGestures
+          .filter()
+          .userIdEqualTo(uid)
+          .idProperty()
+          .findAll();
+
+      if (ids.isNotEmpty) {
+        await _db.customGestures.deleteAll(ids);
+      }
+    });
   }
 }

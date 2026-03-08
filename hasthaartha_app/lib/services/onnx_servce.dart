@@ -28,7 +28,12 @@ class OnnxService {
   late List<double> _mean;
   late List<double> _scale;
   late Map<int, String> _labelMap;
+
+  /// built-in prototypes from fewshot_db.json
   late Map<String, List<double>> _prototypes;
+
+  /// user custom prototypes (Isar)
+  Map<String, List<double>> _customPrototypes = {};
 
   late int _idleIndex;
 
@@ -44,6 +49,15 @@ class OnnxService {
 
   Map<String, List<double>> getBuiltInPrototypes() {
     return _prototypes;
+  }
+
+  Map<String, List<double>> getCustomPrototypes() {
+    return _customPrototypes;
+  }
+
+  /// Load custom prototypes from Isar DB
+  void setCustomPrototypes(Map<String, List<double>> prototypes) {
+    _customPrototypes = prototypes;
   }
 
   // ================= INIT =================
@@ -147,8 +161,7 @@ class OnnxService {
         {_classifierSession.inputNames.first: tensor});
 
     final raw = (outputs!.first as OrtValueTensor).value;
-    final probs =
-        (raw as List).first.cast<double>();
+    final probs = (raw as List).first.cast<double>();
 
     int pred = 0;
     double maxConf = probs[0];
@@ -168,7 +181,6 @@ class OnnxService {
   }
 
   // ================= ENCODER =================
-  // Used for FEW-SHOT + ENROLLMENT
 
   Future<List<double>> encodeWindow(
       List<List<double>> inputData) async {
@@ -200,20 +212,15 @@ class OnnxService {
   // ================= FEW SHOT =================
 
   Future<Map<String, dynamic>?> fewShotPredict(
-      List<List<double>> inputData,
-      {Map<String, List<double>>? customPrototypes}) async {
+      List<List<double>> inputData) async {
 
-    if (_prototypes.isEmpty && customPrototypes == null) return null;
+    if (_prototypes.isEmpty && _customPrototypes.isEmpty) return null;
 
     final embedding = await encodeWindow(inputData);
 
     Map<String, List<double>> allProtos = {};
-
     allProtos.addAll(_prototypes);
-
-    if (customPrototypes != null) {
-      allProtos.addAll(customPrototypes);
-    }
+    allProtos.addAll(_customPrototypes);
 
     String? bestLabel;
     double bestSim = -1;
@@ -248,7 +255,51 @@ class OnnxService {
     return dot;
   }
 
-  // ================= TXT LOADER (DEBUG) =================
+  // ================= FINAL PREDICTION =================
+
+  Future<PredictionResult> predict(
+      List<List<double>> window) async {
+
+    final base = await basePredict(window);
+
+    /// Base model confident
+    if (base["conf"] >= BASE_CONF_TH &&
+        base["idleP"] < IDLE_GATE_TH) {
+      return PredictionResult(
+        label: getLabel(base["pred"]),
+        source: "base",
+        confidence: base["conf"],
+        stable: base["conf"],
+        idleProb: base["idleP"],
+      );
+    }
+
+    /// Try few-shot
+    final few = await fewShotPredict(window);
+
+    if (few != null) {
+      if (few["sim"] >= FEWSHOT_SIM_TH &&
+          few["margin"] >= FEWSHOT_MARGIN) {
+        return PredictionResult(
+          label: few["label"],
+          source: "fewshot",
+          confidence: few["sim"],
+          stable: few["sim"],
+          idleProb: base["idleP"],
+        );
+      }
+    }
+
+    return PredictionResult(
+      label: "Unknown",
+      source: "unknown",
+      confidence: 0,
+      stable: 0,
+      idleProb: base["idleP"],
+    );
+  }
+
+  // ================= TXT LOADER =================
 
   Future<List<List<double>>> loadTxtFrames(String path) async {
     final text = await rootBundle.loadString(path);

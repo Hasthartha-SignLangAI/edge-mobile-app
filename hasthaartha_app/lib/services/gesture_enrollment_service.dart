@@ -126,6 +126,8 @@ class GestureEnrollmentService {
   double _startTh = 0.0;
   double _endTh = 0.0;
 
+  int _idleStableFrames = 0;
+
   // -----------------------------
   // Enrollment state
   // -----------------------------
@@ -299,29 +301,26 @@ class GestureEnrollmentService {
   // -----------------------------
   // Enrollment state machine
   // -----------------------------
-  void _handleEnrollment(double dSmooth, List<double> frame9) {
-    final idleStable = dSmooth < _endTh;
+  Future<void> _handleEnrollment(double dSmooth, List<double> frame9) async {
+    bool idleStable = false;
+
+    if (_buffer.length >= _t) {
+      final base = await onnx.basePredict(_buffer);
+      idleStable = base["idleP"] > 0.7;
+    }
 
     // Waiting for idle
     if (_waitingIdle && !_recording && _countdownStart == null) {
-      if (idleStable) {
-        _waitingIdle = false;
-        _countdownStart = DateTime.now();
+            if (idleStable) {
+        _idleStableFrames++;
 
-        _emit(_state.copyWith(
-          stage: EnrollmentStage.countdown,
-          countdown: 3,
-          message:
-              'Get ready for "${_word ?? ''}" - sample ${_samplesDone + 1}/$_samplesTarget',
-          clearError: true,
-        ));
+        if (_idleStableFrames > 15) {   // ~150ms stable idle
+          _waitingIdle = false;
+          _idleStableFrames = 0;
+          _countdownStart = DateTime.now();
+        }
       } else {
-        _emit(_state.copyWith(
-          stage: EnrollmentStage.waitingIdle,
-          message: 'Hold arm still to start countdown.',
-          clearError: true,
-          clearCountdown: true,
-        ));
+        _idleStableFrames = 0;
       }
       return;
     }
@@ -448,6 +447,9 @@ class GestureEnrollmentService {
         prototype: prototype,
         sampleCount: _sampleWindows.length,
       );
+
+      final protos = await repo.loadCustomPrototypes();
+      onnx.setCustomPrototypes(Map<String, List<double>>.from(protos));
 
       _active = false;
 

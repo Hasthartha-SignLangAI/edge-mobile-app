@@ -11,6 +11,7 @@ import 'package:hasthaartha_app/screens/gestures/manage_custom_gesture_screen.da
 import 'package:hasthaartha_app/screens/settings/profile.dart';
 import 'package:hasthaartha_app/screens/settings/about.dart';
 import 'package:hasthaartha_app/screens/translation/realtime_translation_screen.dart';
+import 'package:hasthaartha_app/screens/translation/sensor_monitor_screen.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
 import 'package:hasthaartha_app/screens/history/history.dart';
 import 'package:hasthaartha_app/main.dart';
@@ -181,7 +182,7 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const HistoryScreen(),
+                              builder: (_) => const AddCustomGestureScreen(),
                             ),
                           );
                         },
@@ -216,14 +217,10 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                         icon: Icons.settings_rounded,
                         iconColor: const Color(0xFF607D8B),
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text("Settings coming soon!"),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              backgroundColor: const Color(0xFF607D8B),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ManageCustomGestureScreen(),
                             ),
                           );
                         },
@@ -239,7 +236,7 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const AboutScreen(),
+                              builder: (_) => const SensorMonitorScreen(),
                             ),
                           );
                         },
