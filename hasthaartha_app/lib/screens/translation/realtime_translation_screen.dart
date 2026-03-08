@@ -11,7 +11,7 @@ import 'package:hasthaartha_app/models/translation_state.dart' as app_state;
 import 'package:hasthaartha_app/providers/translation_providers.dart';
 import 'package:hasthaartha_app/services/speech_service.dart';
 import 'package:hasthaartha_app/widgets/debug_panel.dart';
-import 'package:hasthaartha_app/widgets/gesture_visualizer.dart';
+
 import 'package:hasthaartha_app/widgets/speech_waveform.dart';
 
 /// Real-Time Translation Screen - Main screen of the app
@@ -69,7 +69,7 @@ class _RealtimeTranslationScreenState
         label: prediction.label,
         sinhalaText: prediction.label,
         confidence: prediction.confidence,
-        keypoints: _generateMockKeypoints(),
+        keypoints: const [],
         timestamp: DateTime.now(),
       );
 
@@ -151,15 +151,14 @@ class _RealtimeTranslationScreenState
 
     return Scaffold(
       body: Container(
+        height: double.infinity,
+        width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0D47A1), // Deep blue
-              Color(0xFF1565C0),
-              Color(0xFF1976D2),
-            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF0F7FF), Color(0xFFDEEDFF), Color(0xFFC7E2FF)],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
@@ -178,11 +177,6 @@ class _RealtimeTranslationScreenState
                   child: Column(
                     children: [
                       const SizedBox(height: 20),
-
-                      // Gesture Visualization
-                      _buildGestureVisualization(currentGesture),
-
-                      const SizedBox(height: 30),
 
                       // Predicted Gesture Label (Large Sinhala Text)
                       _buildGestureLabel(currentGesture),
@@ -234,7 +228,10 @@ class _RealtimeTranslationScreenState
           // Back button
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
+            icon: const Icon(
+              Icons.arrow_back_ios_rounded,
+              color: Color(0xFF0D47A1),
+            ),
           ),
 
           // Connection status
@@ -243,12 +240,19 @@ class _RealtimeTranslationScreenState
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: Colors.white.withValues(alpha: 0.9),
                   width: 1,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -266,7 +270,7 @@ class _RealtimeTranslationScreenState
                   Text(
                     bleConnection.isConnected ? 'Connected' : 'Not Connected',
                     style: GoogleFonts.inter(
-                      color: Colors.white,
+                      color: const Color(0xFF1A1A1A),
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -281,27 +285,9 @@ class _RealtimeTranslationScreenState
             onPressed: () {
               // Navigate to settings
             },
-            icon: const Icon(Icons.settings_rounded, color: Colors.white),
+            icon: const Icon(Icons.settings_rounded, color: Color(0xFF0D47A1)),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildGestureVisualization(GestureData gesture) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
-          width: 1.5,
-        ),
-      ),
-      child: GestureVisualizer(
-        gestureData: gesture,
-        size: MediaQuery.of(context).size.width - 80,
       ),
     );
   }
@@ -313,8 +299,19 @@ class _RealtimeTranslationScreenState
         key: ValueKey(gesture.label),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
+          color: Colors.white.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.9),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Column(
           children: [
@@ -322,18 +319,20 @@ class _RealtimeTranslationScreenState
             Text(
               gesture.label.isEmpty ? 'Ready to Translate' : gesture.label,
               style: GoogleFonts.inter(
-                color: Colors.white70,
+                color: Colors.black.withValues(alpha: 0.6),
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 1.5,
               ),
             ),
             const SizedBox(height: 12),
             // Sinhala text (large, high contrast)
             Text(
-              gesture.sinhalaText.isEmpty ? 'අත් ඉඟි පරිවර්තනය' : gesture.sinhalaText,
+              gesture.sinhalaText.isEmpty
+                  ? 'අත් ඉඟි පරිවර්තනය'
+                  : gesture.sinhalaText,
               style: GoogleFonts.notoSansSinhala(
-                color: Colors.white,
+                color: const Color(0xFF0D47A1),
                 fontSize: 48,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
@@ -373,26 +372,37 @@ class _RealtimeTranslationScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.volume_up_rounded,
-                color: Colors.white70,
+                color: const Color(0xFF0D47A1).withValues(alpha: 0.7),
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 'Speech Output',
                 style: GoogleFonts.inter(
-                  color: Colors.white70,
+                  color: const Color(0xFF0D47A1).withValues(alpha: 0.7),
                   fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -401,7 +411,7 @@ class _RealtimeTranslationScreenState
           SpeechWaveform(
             waveformData: _speechService.currentWaveform,
             isPlaying: _speechService.currentWaveform.isNotEmpty,
-            color: const Color(0xFF64B5F6),
+            color: const Color(0xFF1976D2),
             height: 60,
           ),
         ],
@@ -430,10 +440,11 @@ class _RealtimeTranslationScreenState
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: (isActive
-                            ? const Color(0xFFF44336)
-                            : const Color(0xFF4CAF50))
-                        .withValues(alpha: 0.4),
+                    color:
+                        (isActive
+                                ? const Color(0xFFF44336)
+                                : const Color(0xFF4CAF50))
+                            .withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -470,25 +481,42 @@ class _RealtimeTranslationScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Row(
             children: [
-              const Icon(Icons.volume_down_rounded, color: Colors.white70),
+              Icon(
+                Icons.volume_down_rounded,
+                color: const Color(0xFF0D47A1).withValues(alpha: 0.7),
+              ),
               Expanded(
                 child: Slider(
                   value: volume,
                   onChanged: (value) {
                     ref.read(volumeProvider.notifier).state = value;
                   },
-                  activeColor: const Color(0xFF64B5F6),
-                  inactiveColor: Colors.white24,
+                  activeColor: const Color(0xFF1976D2),
+                  inactiveColor: const Color(0xFF1976D2).withValues(alpha: 0.2),
                 ),
               ),
-              const Icon(Icons.volume_up_rounded, color: Colors.white70),
+              Icon(
+                Icons.volume_up_rounded,
+                color: const Color(0xFF0D47A1).withValues(alpha: 0.7),
+              ),
             ],
           ),
         ],
@@ -509,18 +537,5 @@ class _RealtimeTranslationScreenState
 
   List<double> _generateMockIMUData() {
     return List.generate(50, (i) => (i % 8 - 4) / 8);
-  }
-
-  List<HandKeypoint> _generateMockKeypoints() {
-  // Generates stable dummy hand skeleton so visualizer doesn't break
-    return List.generate(
-      21,
-      (i) => HandKeypoint(
-        x: 0.5 + (i % 5) * 0.02,
-        y: 0.5 + (i ~/ 5) * 0.02,
-        confidence: 1.0,
-        z: 0.0,
-      ),
-    );
   }
 }

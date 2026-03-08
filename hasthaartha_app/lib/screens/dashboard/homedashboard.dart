@@ -4,14 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:hasthaartha_app/screens/auth/login.dart';
-import 'package:hasthaartha_app/screens/customized/mygesturelist.dart';
+
 import 'package:hasthaartha_app/screens/dashboard/bledevice.dart';
 import 'package:hasthaartha_app/screens/gestures/add_custom_gesture_screen.dart';
 import 'package:hasthaartha_app/screens/gestures/manage_custom_gesture_screen.dart';
 import 'package:hasthaartha_app/screens/settings/profile.dart';
 import 'package:hasthaartha_app/screens/settings/about.dart';
 import 'package:hasthaartha_app/screens/translation/realtime_translation_screen.dart';
-import 'package:hasthaartha_app/screens/translation/sensor_monitor_screen.dart';
 import 'package:hasthaartha_app/services/auth_service.dart';
 import 'package:hasthaartha_app/screens/history/history.dart';
 import 'package:hasthaartha_app/main.dart';
@@ -99,6 +98,8 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Container(
+        height: double.infinity,
+        width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -182,7 +183,7 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const AddCustomGestureScreen(),
+                              builder: (_) => const HistoryScreen(),
                             ),
                           );
                         },
@@ -191,14 +192,14 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildMenuCard(
-                        title: 'Gestures',
-                        icon: Icons.back_hand_rounded,
+                        title: 'Add Gesture',
+                        icon: Icons.add_circle_outline_rounded,
                         iconColor: const Color(0xFF00897B),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const MyGestureListPage(),
+                              builder: (_) => const AddCustomGestureScreen(),
                             ),
                           );
                         },
@@ -213,9 +214,9 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                   children: [
                     Expanded(
                       child: _buildMenuCard(
-                        title: 'Settings',
-                        icon: Icons.settings_rounded,
-                        iconColor: const Color(0xFF607D8B),
+                        title: 'Manage Gestures',
+                        icon: Icons.back_hand_rounded,
+                        iconColor: const Color(0xFF8E24AA),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -229,20 +230,39 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildMenuCard(
-                        title: 'About',
-                        icon: Icons.info_rounded,
-                        iconColor: const Color(0xFFFF6F00),
+                        title: 'Settings',
+                        icon: Icons.settings_rounded,
+                        iconColor: const Color(0xFF607D8B),
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SensorMonitorScreen(),
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text("Settings coming soon!"),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              backgroundColor: const Color(0xFF607D8B),
                             ),
                           );
                         },
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 16),
+
+                _buildMenuCard(
+                  title: 'About',
+                  icon: Icons.info_rounded,
+                  iconColor: const Color(0xFFFF6F00),
+                  isFullWidth: true,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutScreen()),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 20),

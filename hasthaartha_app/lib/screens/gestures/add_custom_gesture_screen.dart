@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hasthaartha_app/providers/enrollment_provider.dart';
 
 class AddCustomGestureScreen extends ConsumerStatefulWidget {
@@ -26,93 +27,272 @@ class _AddCustomGestureScreenState
     final enrollmentState = ref.watch(enrollmentStateProvider);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Add Custom Gesture"),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: enrollmentState.when(
-          data: (state) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildInputSection(),
-              const SizedBox(height: 30),
-              _buildControlButtons(state),
-              const SizedBox(height: 40),
-              _buildStatusCard(state),
-            ],
+        title: Text(
+          "Add Custom Gesture",
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF0D47A1),
+            letterSpacing: -0.5,
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text(e.toString())),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF0D47A1)),
+      ),
+      body: Container(
+        height: double.infinity,
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF0F7FF), Color(0xFFDEEDFF), Color(0xFFC7E2FF)],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 16.0,
+            ),
+            child: enrollmentState.when(
+              data: (state) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInputSection(),
+                  const SizedBox(height: 32),
+                  _buildControlButtons(state),
+                  const SizedBox(height: 32),
+                  _buildStatusCard(state),
+                  const SizedBox(height: 20),
+                ],
+              ),
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(color: Color(0xFF1976D2)),
+                ),
+              ),
+              error: (e, _) => Center(
+                child: Text(
+                  e.toString(),
+                  style: GoogleFonts.inter(color: Colors.red),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildInputSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Gesture Name",
-          style: TextStyle(fontWeight: FontWeight.w600),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+          width: 1.5,
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _gestureController,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: "Enter gesture name",
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-        ),
-        const SizedBox(height: 20),
-
-        Row(
-          children: [
-            Expanded(
-              child: DropdownButtonFormField<int>(
-                value: _samples,
-                decoration: const InputDecoration(
-                  labelText: "Samples",
-                  border: OutlineInputBorder(),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Gesture Configuration",
+            style: GoogleFonts.inter(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "Gesture Name",
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF455A64),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _gestureController,
+            style: GoogleFonts.inter(color: Colors.black87),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.9),
+              hintText: "Enter gesture name",
+              hintStyle: GoogleFonts.inter(color: Colors.black38),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: const Color(0xFF1976D2).withValues(alpha: 0.1),
                 ),
-                items: [5, 10, 15, 20]
-                    .map((e) => DropdownMenuItem(
-                          value: e,
-                          child: Text("$e"),
-                        ))
-                    .toList(),
-                onChanged: (v) {
-                  if (v != null) {
-                    setState(() => _samples = v);
-                  }
-                },
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFF1976D2),
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
               ),
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: DropdownButtonFormField<double>(
-                value: _duration,
-                decoration: const InputDecoration(
-                  labelText: "Duration (s)",
-                  border: OutlineInputBorder(),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Samples",
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF455A64),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      value: _samples,
+                      style: GoogleFonts.inter(
+                        color: Colors.black87,
+                        fontSize: 16,
+                      ),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: const Color(
+                              0xFF1976D2,
+                            ).withValues(alpha: 0.1),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF1976D2),
+                            width: 2,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      dropdownColor: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      items: [5, 10, 15, 20]
+                          .map(
+                            (e) =>
+                                DropdownMenuItem(value: e, child: Text("$e")),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _samples = v);
+                        }
+                      },
+                    ),
+                  ],
                 ),
-                items: [3, 4, 5, 6, 7, 8]
-                    .map((e) => DropdownMenuItem(
-                          value: e.toDouble(),
-                          child: Text("$e s"),
-                        ))
-                    .toList(),
-                onChanged: (v) {
-                  if (v != null) {
-                    setState(() => _duration = v);
-                  }
-                },
               ),
-            ),
-          ],
-        ),
-      ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Duration (s)",
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF455A64),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<double>(
+                      value: _duration,
+                      style: GoogleFonts.inter(
+                        color: Colors.black87,
+                        fontSize: 16,
+                      ),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: const Color(
+                              0xFF1976D2,
+                            ).withValues(alpha: 0.1),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF1976D2),
+                            width: 2,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      dropdownColor: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      items: [3, 4, 5, 6, 7, 8]
+                          .map(
+                            (e) => DropdownMenuItem(
+                              value: e.toDouble(),
+                              child: Text("$e s"),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _duration = v);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -122,24 +302,78 @@ class _AddCustomGestureScreenState
     return Row(
       children: [
         Expanded(
-          child: ElevatedButton(
-            onPressed: state.active
-                ? null
-                : () async {
-                    await service.startEnrollment(
-                      word: _gestureController.text,
-                      samples: _samples,
-                      durationSec: _duration,
-                    );
-                  },
-            child: const Text("Start Enrollment"),
+          flex: 2,
+          child: Container(
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: state.active
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: const Color(0xFF1976D2).withValues(alpha: 0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+            ),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1976D2),
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade400,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: state.active
+                  ? null
+                  : () async {
+                      await service.startEnrollment(
+                        word: _gestureController.text,
+                        samples: _samples,
+                        durationSec: _duration,
+                      );
+                    },
+              child: Text(
+                "Start Enrollment",
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
           ),
         ),
-        const SizedBox(width: 15),
+        const SizedBox(width: 16),
         Expanded(
-          child: OutlinedButton(
-            onPressed: state.active ? service.cancelEnrollment : null,
-            child: const Text("Cancel"),
+          flex: 1,
+          child: SizedBox(
+            height: 60,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFE53935),
+                side: BorderSide(
+                  color: state.active
+                      ? const Color(0xFFE53935).withValues(alpha: 0.5)
+                      : Colors.grey.shade300,
+                  width: 2,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: state.active ? service.cancelEnrollment : null,
+              child: Text(
+                "Cancel",
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
         ),
       ],
@@ -147,39 +381,121 @@ class _AddCustomGestureScreenState
   }
 
   Widget _buildStatusCard(state) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Status",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.analytics_rounded,
+                color: const Color(0xFF1976D2),
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                "Enrollment Status",
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1A1A1A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildStatusRow("Stage", _stageText(state.stage)),
+          const SizedBox(height: 12),
+          _buildStatusRow(
+            "Samples",
+            "${state.samplesDone} / ${state.samplesTarget}",
+          ),
+          if (state.countdown != null) ...[
             const SizedBox(height: 12),
-            Text("Stage: ${_stageText(state.stage)}"),
-            const SizedBox(height: 6),
-            Text("Samples: ${state.samplesDone}/${state.samplesTarget}"),
-            const SizedBox(height: 6),
-            if (state.countdown != null)
-              Text("Countdown: ${state.countdown}"),
-            const SizedBox(height: 6),
+            _buildStatusRow(
+              "Countdown",
+              "${state.countdown}s",
+              valueColor: const Color(0xFFE53935), // Red color for countdown
+            ),
+          ],
+          if (state.message != null || state.error != null) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Divider(color: Colors.black12, height: 1),
+            ),
             if (state.message != null)
               Text(
                 state.message!,
-                style: const TextStyle(color: Colors.blueGrey),
+                style: GoogleFonts.inter(
+                  color: const Color(0xFF00897B),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
               ),
             if (state.error != null)
               Text(
                 state.error!,
-                style: const TextStyle(color: Colors.red),
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFE53935),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
               ),
           ],
-        ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildStatusRow(String label, String value, {Color? valueColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            color: const Color(0xFF455A64),
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: (valueColor ?? const Color(0xFF1976D2)).withValues(
+              alpha: 0.1,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            value,
+            style: GoogleFonts.inter(
+              color: valueColor ?? const Color(0xFF1976D2),
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

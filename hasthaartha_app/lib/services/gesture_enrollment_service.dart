@@ -7,7 +7,6 @@ import 'package:hasthaartha_app/services/onnx_servce.dart';
 
 enum EnrollmentStage {
   idle,
-  calibrating,
   waitingIdle,
   countdown,
   recording,
@@ -90,20 +89,9 @@ class GestureEnrollmentService {
     _stateController.add(_state);
   }
 
-  // -----------------------------
-  // Config (matched to web logic)
-  // -----------------------------
   static const int _t = 512;
   static const int _f = 9;
 
-  static const int _calibFrames = 200; // ~2 sec at 100Hz
-  static const double _kStart = 3.0;
-  static const double _kEnd = 2.0;
-  static const int _energySmoothW = 8;
-
-  // -----------------------------
-  // Streams / state
-  // -----------------------------
   final StreamController<EnrollmentState> _stateController =
       StreamController<EnrollmentState>.broadcast();
 
@@ -114,23 +102,10 @@ class GestureEnrollmentService {
 
   StreamSubscription<List<double>>? _frameSub;
 
-  // -----------------------------
-  // Live frame state
-  // -----------------------------
   final List<List<double>> _buffer = [];
-  final List<double> _energyBuffer = [];
-
-  final List<List<double>> _calibFramesBuf = [];
-
-  List<double>? _idleMean3;
-  double _startTh = 0.0;
-  double _endTh = 0.0;
 
   int _idleStableFrames = 0;
 
-  // -----------------------------
-  // Enrollment state
-  // -----------------------------
   bool _active = false;
   String? _word;
   int _samplesTarget = 0;
@@ -147,9 +122,6 @@ class GestureEnrollmentService {
   List<List<double>> _currentRawFrames = [];
   final List<List<List<double>>> _sampleWindows = [];
 
-  // -----------------------------
-  // Public controls
-  // -----------------------------
   Future<bool> startEnrollment({
     required String word,
     int samples = 10,
@@ -161,25 +133,7 @@ class GestureEnrollmentService {
       _emit(_state.copyWith(
         active: false,
         stage: EnrollmentStage.error,
-        error: 'Invalid word. Use a single word without spaces.',
-      ));
-      return false;
-    }
-
-    if (samples <= 0 || samples > 50) {
-      _emit(_state.copyWith(
-        active: false,
-        stage: EnrollmentStage.error,
-        error: 'Samples must be between 1 and 50.',
-      ));
-      return false;
-    }
-
-    if (durationSec < 1.0 || durationSec > 12.0) {
-      _emit(_state.copyWith(
-        active: false,
-        stage: EnrollmentStage.error,
-        error: 'Duration must be between 1 and 12 seconds.',
+        error: 'Invalid word. Use a single word.',
       ));
       return false;
     }
@@ -187,7 +141,7 @@ class GestureEnrollmentService {
     if (_active) {
       _emit(_state.copyWith(
         stage: EnrollmentStage.error,
-        error: 'Enrollment already active. Cancel first.',
+        error: 'Enrollment already active.',
       ));
       return false;
     }
@@ -200,42 +154,22 @@ class GestureEnrollmentService {
 
     _recording = false;
     _waitingIdle = true;
-    _countdownStart = null;
-    _recordStart = null;
-    _currentRawFrames = [];
-    _sampleWindows.clear();
 
-    // If calibration is not ready yet, service will auto-calibrate from live frames.
     _emit(EnrollmentState(
       active: true,
-      stage: _idleMean3 == null
-          ? EnrollmentStage.calibrating
-          : EnrollmentStage.waitingIdle,
+      stage: EnrollmentStage.waitingIdle,
       word: _word,
-      samplesTarget: _samplesTarget,
-      samplesDone: _samplesDone,
-      durationSec: _durationSec,
-      message: _idleMean3 == null
-          ? 'Calibrating idle baseline. Keep arm relaxed.'
-          : 'Waiting for idle hand position.',
+      samplesTarget: samples,
+      samplesDone: 0,
+      durationSec: durationSec,
+      message: 'Hold arm still to start recording.',
     ));
 
     return true;
   }
 
   void cancelEnrollment() {
-    _active = false;
-    _word = null;
-    _samplesTarget = 0;
-    _samplesDone = 0;
-    _durationSec = 6.0;
-
-    _recording = false;
-    _waitingIdle = false;
-    _countdownStart = null;
-    _recordStart = null;
-    _currentRawFrames = [];
-    _sampleWindows.clear();
+    _resetEnrollmentFieldsOnly();
 
     _emit(const EnrollmentState(
       active: false,
@@ -252,72 +186,38 @@ class GestureEnrollmentService {
     _stateController.close();
   }
 
-  // -----------------------------
-  // Main frame handler
-  // -----------------------------
-  void _onFrame(List<double> frame9) {
+  void _onFrame(List<double> frame9) async {
     if (frame9.length != _f) return;
 
-    // Always keep ring buffer
     _buffer.add(List<double>.from(frame9));
     if (_buffer.length > _t) {
       _buffer.removeAt(0);
     }
 
-    // Auto-calibrate from live frames if not yet calibrated
-    if (_idleMean3 == null) {
-      _calibFramesBuf.add(List<double>.from(frame9));
-      if (_calibFramesBuf.length >= _calibFrames) {
-        _calibrateIdle(_calibFramesBuf);
-        _calibFramesBuf.clear();
-
-        if (_active) {
-          _emit(_state.copyWith(
-            stage: EnrollmentStage.waitingIdle,
-            message: 'Calibration complete. Waiting for idle hand position.',
-            clearError: true,
-            clearCountdown: true,
-          ));
-        }
-      } else if (_active) {
-        _emit(_state.copyWith(
-          stage: EnrollmentStage.calibrating,
-          message: 'Calibrating idle baseline... ${_calibFramesBuf.length}/$_calibFrames',
-          clearError: true,
-          clearCountdown: true,
-        ));
-      }
-      return;
-    }
-
     if (!_active) return;
+    if (_buffer.length < _t) return;
 
-    final d = _deltaEnergy(frame9);
-    final dSmooth = _movingAvg(d);
-
-    _handleEnrollment(dSmooth, frame9);
+    await _handleEnrollment(frame9);
   }
 
-  // -----------------------------
-  // Enrollment state machine
-  // -----------------------------
-  Future<void> _handleEnrollment(double dSmooth, List<double> frame9) async {
-    bool idleStable = false;
+  Future<void> _handleEnrollment(List<double> frame9) async {
+    final base = await onnx.basePredict(_buffer);
+    final idleStable = base["idleP"] > 0.7;
 
-    if (_buffer.length >= _t) {
-      final base = await onnx.basePredict(_buffer);
-      idleStable = base["idleP"] > 0.7;
-    }
-
-    // Waiting for idle
     if (_waitingIdle && !_recording && _countdownStart == null) {
-            if (idleStable) {
+      if (idleStable) {
         _idleStableFrames++;
 
-        if (_idleStableFrames > 15) {   // ~150ms stable idle
+        if (_idleStableFrames > 15) {
           _waitingIdle = false;
           _idleStableFrames = 0;
           _countdownStart = DateTime.now();
+
+          _emit(_state.copyWith(
+            stage: EnrollmentStage.countdown,
+            countdown: 3,
+            message: 'Get ready...',
+          ));
         }
       } else {
         _idleStableFrames = 0;
@@ -325,60 +225,52 @@ class GestureEnrollmentService {
       return;
     }
 
-    // Countdown
     if (_countdownStart != null && !_recording) {
-      final elapsedMs =
+      final elapsed =
           DateTime.now().difference(_countdownStart!).inMilliseconds;
-      final remaining = _countdownSeconds - (elapsedMs ~/ 1000);
+
+      final remaining = _countdownSeconds - (elapsed ~/ 1000);
 
       if (remaining > 0) {
         _emit(_state.copyWith(
           stage: EnrollmentStage.countdown,
           countdown: remaining,
-          message:
-              'Perform "${_word ?? ''}" in $remaining...',
-          clearError: true,
-        ));
-        return;
-      } else {
-        _countdownStart = null;
-        _recording = true;
-        _recordStart = DateTime.now();
-        _currentRawFrames = [];
-
-        _emit(_state.copyWith(
-          stage: EnrollmentStage.recording,
-          countdown: 0,
-          message:
-              'Recording sample ${_samplesDone + 1}/$_samplesTarget...',
-          clearError: true,
         ));
         return;
       }
+
+      _countdownStart = null;
+      _recording = true;
+      _recordStart = DateTime.now();
+      _currentRawFrames = [];
+
+      _emit(_state.copyWith(
+        stage: EnrollmentStage.recording,
+        message:
+            'Recording sample ${_samplesDone + 1}/$_samplesTarget',
+      ));
+      return;
     }
 
-    // Recording
     if (_recording) {
-      _currentRawFrames.add(List<double>.from(frame9));
+      _currentRawFrames.add(frame9);
 
-      final elapsedMs =
+      final elapsed =
           DateTime.now().difference(_recordStart!).inMilliseconds;
 
-      if (elapsedMs >= (_durationSec * 1000).round()) {
+      if (elapsed >= (_durationSec * 1000)) {
         _recording = false;
 
         final raw = List<List<double>>.from(_currentRawFrames);
         final fixed = _fixLengthCenter(raw, _t);
 
         _sampleWindows.add(fixed);
-        _samplesDone += 1;
+        _samplesDone++;
 
         _emit(_state.copyWith(
           stage: EnrollmentStage.waitingIdle,
           samplesDone: _samplesDone,
-          message: 'Recorded sample $_samplesDone/$_samplesTarget',
-          clearCountdown: true,
-          clearError: true,
+          message: 'Recorded $_samplesDone/$_samplesTarget',
         ));
 
         if (_samplesDone >= _samplesTarget) {
@@ -388,33 +280,11 @@ class GestureEnrollmentService {
 
         _waitingIdle = true;
         _currentRawFrames = [];
-        _recordStart = null;
       }
-      return;
     }
   }
 
-  // -----------------------------
-  // Finalize: average embeddings
-  // -----------------------------
   Future<void> _finalizeEnrollment() async {
-    if (_sampleWindows.isEmpty || _word == null) {
-      _emit(_state.copyWith(
-        active: false,
-        stage: EnrollmentStage.error,
-        error: 'No samples recorded.',
-      ));
-      cancelEnrollment();
-      return;
-    }
-
-    _emit(_state.copyWith(
-      stage: EnrollmentStage.saving,
-      message: 'Generating personalized prototype...',
-      clearCountdown: true,
-      clearError: true,
-    ));
-
     try {
       final embeddings = <List<double>>[];
 
@@ -423,16 +293,12 @@ class GestureEnrollmentService {
         embeddings.add(emb);
       }
 
-      if (embeddings.isEmpty) {
-        throw Exception('No embeddings generated.');
-      }
-
       final dim = embeddings.first.length;
-      final avg = List<double>.filled(dim, 0.0);
+      final avg = List<double>.filled(dim, 0);
 
-      for (final emb in embeddings) {
+      for (final e in embeddings) {
         for (int i = 0; i < dim; i++) {
-          avg[i] += emb[i];
+          avg[i] += e[i];
         }
       }
 
@@ -449,30 +315,21 @@ class GestureEnrollmentService {
       );
 
       final protos = await repo.loadCustomPrototypes();
-      onnx.setCustomPrototypes(Map<String, List<double>>.from(protos));
+      onnx.setCustomPrototypes(protos);
 
-      _active = false;
-
-      _emit(EnrollmentState(
+      _emit(_state.copyWith(
         active: false,
         stage: EnrollmentStage.done,
-        word: _word,
-        samplesTarget: _samplesTarget,
-        samplesDone: _samplesDone,
-        durationSec: _durationSec,
-        message:
-            'Gesture "${_word!}" saved successfully with ${_sampleWindows.length} samples.',
+        message: 'Gesture "$_word" saved successfully.',
       ));
 
-      // Reset local enrollment fields but keep calibration
       _resetEnrollmentFieldsOnly();
     } catch (e) {
       _emit(_state.copyWith(
         active: false,
         stage: EnrollmentStage.error,
-        error: 'Failed to save gesture: $e',
+        error: e.toString(),
       ));
-      _resetEnrollmentFieldsOnly();
     }
   }
 
@@ -487,73 +344,24 @@ class GestureEnrollmentService {
     _waitingIdle = false;
     _countdownStart = null;
     _recordStart = null;
+
     _currentRawFrames = [];
     _sampleWindows.clear();
   }
 
-  // -----------------------------
-  // Calibration helpers
-  // -----------------------------
-  void _calibrateIdle(List<List<double>> idleFrames) {
-    double m0 = 0.0, m1 = 0.0, m2 = 0.0;
-
-    for (final r in idleFrames) {
-      m0 += r[0];
-      m1 += r[1];
-      m2 += r[2];
-    }
-
-    final n = idleFrames.length;
-    _idleMean3 = [m0 / n, m1 / n, m2 / n];
-
-    final deltas = idleFrames.map(_deltaEnergy).toList();
-
-    final med = _median(deltas);
-    final mad =
-        _median(deltas.map((x) => (x - med).abs()).toList()) + 1e-6;
-    final robustStd = 1.4826 * mad;
-
-    _startTh = med + _kStart * robustStd;
-    _endTh = med + _kEnd * robustStd;
-  }
-
-  double _deltaEnergy(List<double> row9) {
-    if (_idleMean3 == null) return 0.0;
-
-    return (row9[0] - _idleMean3![0]).abs() +
-        (row9[1] - _idleMean3![1]).abs() +
-        (row9[2] - _idleMean3![2]).abs();
-  }
-
-  double _movingAvg(double x) {
-    _energyBuffer.add(x);
-    if (_energyBuffer.length > _energySmoothW) {
-      _energyBuffer.removeAt(0);
-    }
-    return _energyBuffer.reduce((a, b) => a + b) / _energyBuffer.length;
-  }
-
-  double _median(List<double> a) {
-    final b = List<double>.from(a)..sort();
-    if (b.isEmpty) return 0.0;
-    final mid = b.length ~/ 2;
-    if (b.length.isOdd) return b[mid];
-    return (b[mid - 1] + b[mid]) / 2.0;
-  }
-
   List<List<double>> _fixLengthCenter(
-    List<List<double>> x,
-    int targetLen,
-  ) {
+      List<List<double>> x, int targetLen) {
     if (x.length >= targetLen) {
       final start = (x.length - targetLen) ~/ 2;
       return x.sublist(start, start + targetLen);
     }
 
-    final out = List<List<double>>.from(x.map((e) => List<double>.from(e)));
+    final out = List<List<double>>.from(x);
+
     while (out.length < targetLen) {
-      out.add(List<double>.filled(_f, 0.0));
+      out.add(List.filled(_f, 0));
     }
+
     return out;
   }
 
