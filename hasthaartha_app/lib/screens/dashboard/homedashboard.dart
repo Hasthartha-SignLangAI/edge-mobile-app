@@ -98,6 +98,8 @@ class _HomeDashboardState extends ConsumerState<HomeDashboard>
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Container(
+        height: double.infinity,
+        width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
