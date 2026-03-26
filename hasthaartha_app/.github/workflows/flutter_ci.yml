@@ -2,9 +2,9 @@ name: Flutter CI
 
 on:
   push:
-    branches: [ main, test/github-actions ]
+    branches: [ "main", "test/github-actions" ]
   pull_request:
-    branches: [ main, test/github-actions ]
+    branches: [ "main", "test/github-actions" ]
 
 jobs:
   build:
