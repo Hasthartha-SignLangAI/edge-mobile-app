@@ -51,6 +51,11 @@ class BlePipelineService {
   bool _calibrated = false;
   final List<List<double>> _idleBuffer = [];
 
+  /// True while the ESP32 is actively streaming sensor data.
+  bool _isStreaming = false;
+  bool get isStreaming => _isStreaming;
+
+
   BlePipelineService({
     required this.onnx,
     required this.engine,
@@ -139,16 +144,8 @@ class BlePipelineService {
       throw Exception("Required BLE characteristics not found.");
     }
 
-    await _streamChar!.setNotifyValue(true);
-
-    _notifySub?.cancel();
-    _notifySub =
-        _streamChar!.lastValueStream.listen(_onPacket);
-
-    await _ctrlChar!.write(
-      [0x01],
-      withoutResponse: _ctrlChar!.properties.writeWithoutResponse,
-    );
+    // ✅ Characteristics discovered — but do NOT start streaming yet.
+    // Call startStreaming() explicitly when the user taps Start.
 
     _lastSeq = -1;
     _calibrated = false;
@@ -156,17 +153,73 @@ class BlePipelineService {
   }
 
   // =========================================================
+  // START STREAMING
+  // =========================================================
+  /// Enable BLE notifications and send the start command (0x01) to the
+  /// ESP32 so it begins sending sensor frames.
+  ///
+  /// Safe to call only after [connect()] has completed successfully.
+  /// Throws if characteristics are not available.
+  Future<void> startStreaming() async {
+    if (_streamChar == null || _ctrlChar == null) {
+      throw Exception('BLE characteristics not ready. Connect first.');
+    }
+    if (_isStreaming) return; // already streaming
+
+    await _streamChar!.setNotifyValue(true);
+
+    _notifySub?.cancel();
+    _notifySub = _streamChar!.lastValueStream.listen(_onPacket);
+
+    await _ctrlChar!.write(
+      [0x01],
+      withoutResponse: _ctrlChar!.properties.writeWithoutResponse,
+    );
+
+    _isStreaming = true;
+  }
+
+  // =========================================================
+  // STOP STREAMING
+  // =========================================================
+  /// Send the stop command (0x00) to the ESP32 and disable BLE notifications.
+  ///
+  /// Safe to call even if not currently streaming.
+  Future<void> stopStreaming() async {
+    if (!_isStreaming) return;
+
+    // Ask the device to stop sending frames first.
+    if (_ctrlChar != null) {
+      await _ctrlChar!.write(
+        [0x00],
+        withoutResponse: _ctrlChar!.properties.writeWithoutResponse,
+      ).catchError((_) {});
+    }
+
+    _notifySub?.cancel();
+    _notifySub = null;
+
+    if (_streamChar != null) {
+      await _streamChar!.setNotifyValue(false).catchError((_) {});
+    }
+
+    _isStreaming = false;
+
+    // Reset engine state so the next session calibrates cleanly.
+    _lastSeq = -1;
+    _calibrated = false;
+    _idleBuffer.clear();
+  }
+
+
+  // =========================================================
   // DISCONNECT
   // =========================================================
   Future<void> disconnect() async {
-    _notifySub?.cancel();
-    _connSub?.cancel();
+    // Stop streaming cleanly before dropping the connection.
+    await stopStreaming();
 
-    if (_streamChar != null) {
-      await _streamChar!
-          .setNotifyValue(false)
-          .catchError((_) {});
-    }
+    _connSub?.cancel();
 
     if (device != null) {
       await device!.disconnect().catchError((_) {});
@@ -175,10 +228,7 @@ class BlePipelineService {
     device = null;
     _streamChar = null;
     _ctrlChar = null;
-
-    _lastSeq = -1;
-    _calibrated = false;
-    _idleBuffer.clear();
+    _isStreaming = false;
 
     _connectionController.add(BluetoothConnectionState.disconnected);
   }

@@ -192,10 +192,12 @@ class _RealtimeTranslationScreenState
     }
   }
 
-  void _toggleTranslation() {
+  Future<void> _toggleTranslation() async {
     final state = ref.read(translationStateProvider);
+    final bleService = ref.read(blePipelineProvider);
 
     if (state.isActive) {
+      // ── Stop ──────────────────────────────────────────────────────────────
       final mode = ref.read(translationModeProvider);
       if (mode == TranslationMode.sentence) {
         // Force-finalize so the sentence is not lost on Stop.
@@ -204,11 +206,27 @@ class _RealtimeTranslationScreenState
       ref.read(translationStateProvider.notifier).stopTranslation();
       _speechService.stop();
       ref.read(currentGestureProvider.notifier).clear();
+
+      // Tell the ESP32 to stop sending frames.
+      await bleService.stopStreaming();
     } else {
+      // ── Start ─────────────────────────────────────────────────────────────
+      // Tell the ESP32 to start sending frames before activating translation.
+      try {
+        await bleService.startStreaming();
+      } catch (e) {
+        // Device not connected or characteristics not ready.
+        ref.read(translationStateProvider.notifier).setError(
+          'Could not start streaming: $e',
+        );
+        return;
+      }
+
       ref.read(translationStateProvider.notifier).startTranslation();
       HapticFeedback.mediumImpact();
     }
   }
+
 
   void _clearSentence() {
     ref.read(sentenceBuilderProvider).reset();
