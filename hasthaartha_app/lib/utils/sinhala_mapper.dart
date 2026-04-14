@@ -7,7 +7,7 @@ class SinhalaMapper {
     "sthuthi": "ස්තූතියි",
     "awidinawa": "ඇවිදිනවා",
     "boru": "බොරු",
-    "hawasa": "කරුණාකර සමාවෙන්න",
+    "hawasa": "හවස",
     "irida": "ඉරිදා",
     "hodai": "හොඳයි",
     "narakai": "නරකයි",
