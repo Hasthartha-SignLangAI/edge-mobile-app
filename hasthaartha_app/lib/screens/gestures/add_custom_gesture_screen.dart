@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hasthaartha_app/main.dart';
 import 'package:hasthaartha_app/providers/enrollment_provider.dart';
 
 class AddCustomGestureScreen extends ConsumerStatefulWidget {
@@ -15,12 +18,42 @@ class _AddCustomGestureScreenState
     extends ConsumerState<AddCustomGestureScreen> {
   final TextEditingController _gestureController = TextEditingController();
 
-  String _stageText(stage) {
-    return stage.toString().split('.').last;
-  }
-
   int _samples = 10;
   double _duration = 6;
+
+  /// Tracks whether enrollment was active on the last state update so we
+  /// can detect the active → inactive transition (done / cancelled / error).
+  bool _wasEnrollmentActive = false;
+
+  StreamSubscription? _enrollmentSub;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Watch enrollment state changes to stop BLE streaming automatically
+    // when enrollment ends (done, cancelled, or error).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final service = ref.read(enrollmentServiceProvider);
+      _enrollmentSub = service.stateStream.listen((state) {
+        if (_wasEnrollmentActive && !state.active) {
+          // Enrollment just became inactive — stop streaming.
+          ref.read(blePipelineProvider).stopStreaming();
+        }
+        _wasEnrollmentActive = state.active;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _enrollmentSub?.cancel();
+    _gestureController.dispose();
+    super.dispose();
+  }
+
+
+  String _stageText(dynamic stage) => stage.toString().split('.').last;
 
   @override
   Widget build(BuildContext context) {
@@ -330,12 +363,34 @@ class _AddCustomGestureScreenState
               onPressed: state.active
                   ? null
                   : () async {
+                      final bleService = ref.read(blePipelineProvider);
+                      // Capture messenger before any async gap.
+                      final messenger = ScaffoldMessenger.of(context);
+
+                      // Start BLE streaming before beginning enrollment.
+                      try {
+                        await bleService.startStreaming();
+                      } catch (e) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Could not start streaming: $e',
+                              style: GoogleFonts.inter(),
+                            ),
+                            backgroundColor: const Color(0xFFE53935),
+                          ),
+                        );
+                        return;
+                      }
+
                       await service.startEnrollment(
                         word: _gestureController.text,
                         samples: _samples,
                         durationSec: _duration,
                       );
                     },
+
+
               child: Text(
                 "Start Enrollment",
                 style: GoogleFonts.inter(
