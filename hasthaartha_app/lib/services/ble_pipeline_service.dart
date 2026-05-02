@@ -205,10 +205,9 @@ class BlePipelineService {
 
     _isStreaming = false;
 
-    // Reset engine state so the next session calibrates cleanly.
+    // Reset engine state but keep calibration for the next session.
     _lastSeq = -1;
-    _calibrated = false;
-    _idleBuffer.clear();
+    engine.reset();
   }
 
 
@@ -231,6 +230,10 @@ class BlePipelineService {
     _isStreaming = false;
 
     _connectionController.add(BluetoothConnectionState.disconnected);
+
+    // Force a new calibration on next connection
+    _calibrated = false;
+    _idleBuffer.clear();
   }
 
   void dispose() {

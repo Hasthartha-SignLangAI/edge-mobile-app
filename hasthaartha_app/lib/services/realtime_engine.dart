@@ -37,6 +37,23 @@ class RealtimeGestureEngine {
 
   RealtimeGestureEngine(this.onnx);
 
+  /// Resets the engine's transient state (buffers, counters) but PRESERVES
+  /// calibration data (_idleMean3, _startTh, _endTh).
+  void reset() {
+    _buffer.clear();
+    _energyBuffer.clear();
+    _inGesture = false;
+    _quiet = 0;
+    _frames = 0;
+    _cooldown = 0;
+    _framesSincePred = 0;
+    _voteCounter.clear();
+    _confSum.clear();
+    _idleSum = 0;
+    _votesTotal = 0;
+  }
+
+
   void calibrateIdle(List<List<double>> idleFrames) {
     double m0 = 0, m1 = 0, m2 = 0;
     for (var r in idleFrames) {
