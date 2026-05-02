@@ -115,46 +115,60 @@ class ManageCustomGestureScreen extends ConsumerWidget {
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF1A1A1A),
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                                 const SizedBox(height: 6),
-                                Row(
+                                 Wrap(
+                                  spacing: 12,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
-                                    Icon(
-                                      Icons.data_usage_rounded,
-                                      size: 14,
-                                      color: Colors.black.withValues(
-                                        alpha: 0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      "${g.sampleCount} Samples",
-                                      style: GoogleFonts.inter(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.55,
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.data_usage_rounded,
+                                          size: 14,
+                                          color: Colors.black.withValues(
+                                            alpha: 0.5,
+                                          ),
                                         ),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Icon(
-                                      Icons.calendar_today_rounded,
-                                      size: 13,
-                                      color: Colors.black.withValues(
-                                        alpha: 0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      dateStr,
-                                      style: GoogleFonts.inter(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.55,
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          "${g.sampleCount} Samples",
+                                          style: GoogleFonts.inter(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.55,
+                                            ),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                      ],
+                                    ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today_rounded,
+                                          size: 13,
+                                          color: Colors.black.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          dateStr,
+                                          style: GoogleFonts.inter(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.55,
+                                            ),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
