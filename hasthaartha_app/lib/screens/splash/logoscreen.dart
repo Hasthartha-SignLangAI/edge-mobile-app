@@ -33,7 +33,6 @@ class _LogoScreenState extends State<LogoScreen> {
               width: 150, // Adjust size as needed
               height: 150,
               errorBuilder: (context, error, stackTrace) {
-                
                 return const Icon(
                   Icons.fingerprint, //icon for "Hasthaartha"
                   size: 100,
@@ -47,7 +46,7 @@ class _LogoScreenState extends State<LogoScreen> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF007BFF), 
+                color: Color(0xFF007BFF),
               ),
             ),
           ],

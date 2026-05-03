@@ -1,21 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:hasthaartha_app/services/auth_gate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Splash3 extends StatelessWidget {
   const Splash3({super.key});
+
+  void _goNext(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenSplash', true);
+
+    if (context.mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
+      // Instead of GestureDetector for the whole screen,
+      // we make a clear button so users don't accidentally skip.
       body: Column(
         children: [
           // Wave Background
           ClipPath(
             clipper: Splash3WaveClipper(),
-            child: Container(
-              height: 300, // Adjusted height for proportion
-              color: const Color(0xFF007BFF),
-            ),
+            child: Container(height: 300, color: const Color(0xFF007BFF)),
           ),
 
           // Title
@@ -59,7 +73,7 @@ class Splash3 extends StatelessWidget {
             ),
           ),
 
-          const Spacer(flex: 2),
+          const Spacer(),
 
           // Dots
           Row(
@@ -72,13 +86,42 @@ class Splash3 extends StatelessWidget {
               _buildDot(true),
             ],
           ),
-          const SizedBox(height: 48),
+
+          const SizedBox(height: 18),
+
+          // Clear CTA button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF007BFF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: () => _goNext(context),
+                child: const Text(
+                  "Get Started",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 28),
         ],
       ),
     );
   }
 
-  Widget _buildDot(bool isActive) {
+  static Widget _buildDot(bool isActive) {
     return Container(
       width: 12,
       height: 12,
