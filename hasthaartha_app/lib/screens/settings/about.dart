@@ -14,13 +14,13 @@ class AboutScreen extends StatelessWidget {
           'About Hasthaartha',
           style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF4A148C),
+            color: const Color(0xFF0D47A1),
             fontSize: 20,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF4A148C)),
+        iconTheme: const IconThemeData(color: Color(0xFF0D47A1)),
         centerTitle: true,
       ),
       body: Container(
@@ -28,7 +28,7 @@ class AboutScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFF3E5F5), Color(0xFFE8EAF6), Color(0xFFE1BEE7)],
+            colors: [Color(0xFFF0F7FF), Color(0xFFDEEDFF), Color(0xFFC7E2FF)],
             stops: [0.0, 0.5, 1.0],
           ),
         ),
@@ -50,7 +50,7 @@ class AboutScreen extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF4A148C),
+                    color: const Color(0xFF0D47A1),
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -59,7 +59,7 @@ class AboutScreen extends StatelessWidget {
                   'Version 1.0.0',
                   style: GoogleFonts.inter(
                     fontSize: 16,
-                    color: Colors.blueGrey[600],
+                    color: const Color(0xFF0D47A1).withValues(alpha: 0.6),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -69,7 +69,7 @@ class AboutScreen extends StatelessWidget {
                   content:
                       'Hasthaartha is an advanced Sign Language AI application built to bridge communication gaps. By leveraging Real-Time Gesture Recognition and seamless Sinhala speech feedback, we aim to empower our community with smart and intuitive communication tools.',
                   icon: Icons.auto_awesome_rounded,
-                  iconColor: const Color(0xFF7E57C2),
+                  iconColor: const Color(0xFF1565C0),
                 ),
                 const SizedBox(height: 20),
                 AnimatedInfoCard(
@@ -77,14 +77,14 @@ class AboutScreen extends StatelessWidget {
                   content:
                       '• Real-Time Gesture Translation\n• Low-latency processing\n• Customizable gesture dictionary\n• Bluetooth connected wearable armband',
                   icon: Icons.featured_play_list_rounded,
-                  iconColor: const Color(0xFF5E35B1),
+                  iconColor: const Color(0xFF0D47A1),
                 ),
                 const SizedBox(height: 40),
                 Text(
                   'Made with ♥ for the community',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.blueGrey[400],
+                    color: const Color(0xFF0D47A1).withValues(alpha: 0.4),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -99,26 +99,29 @@ class AboutScreen extends StatelessWidget {
 
   Widget _buildAppLogo() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: 140,
+      height: 140,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF7E57C2), Color(0xFFAB47BC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white.withValues(alpha: 0.7),
         shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7E57C2).withValues(alpha: 0.4),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: const Icon(
-        Icons.waving_hand_rounded,
-        size: 64,
-        color: Colors.white,
+      child: ClipOval(
+        child: Image.asset(
+          'assets/images/hasthaartha_logo.png',
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }
@@ -164,7 +167,7 @@ class _AnimatedInfoCardState extends State<AnimatedInfoCard> {
               BoxShadow(
                 color: _isPressed
                     ? widget.iconColor.withValues(alpha: 0.25)
-                    : Colors.deepPurple.withValues(alpha: 0.08),
+                    : const Color(0xFF0D47A1).withValues(alpha: 0.08),
                 blurRadius: _isPressed ? 32 : 24,
                 spreadRadius: _isPressed ? 4 : 0,
                 offset: Offset(0, _isPressed ? 12 : 8),
@@ -216,7 +219,7 @@ class _AnimatedInfoCardState extends State<AnimatedInfoCard> {
                           style: GoogleFonts.inter(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1A1A1A),
+                            color: const Color(0xFF0D47A1),
                           ),
                         ),
                       ],
