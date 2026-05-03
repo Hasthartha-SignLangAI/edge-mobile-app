@@ -25,7 +25,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final data = await _repo.latestHistory(limit: 200);
     if (!mounted) return;
     setState(() {
-      _items = data;
+      _items = data.where((item) {
+        final label = item.gestureLabel.toLowerCase();
+        return label != 'idle' && label != 'unknown';
+      }).toList();
       _loading = false;
     });
   }

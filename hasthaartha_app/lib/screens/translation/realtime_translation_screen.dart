@@ -104,12 +104,15 @@ class _RealtimeTranslationScreenState
 
     if (mode == TranslationMode.word) {
       // ── Word Mode: existing behavior completely unchanged ──────────────
-      final repo = ref.read(localRepoProvider);
-      await repo.addHistory(
-        gestureLabel: prediction.label,
-        sinhalaText: sinhalaWord,
-        confidence: prediction.confidence,
-      );
+      if (prediction.label.toLowerCase() != 'idle' &&
+          prediction.label.toLowerCase() != 'unknown') {
+        final repo = ref.read(localRepoProvider);
+        await repo.addHistory(
+          gestureLabel: prediction.label,
+          sinhalaText: sinhalaWord,
+          confidence: prediction.confidence,
+        );
+      }
 
       final gesture = GestureData(
         label: prediction.label,
